@@ -135,6 +135,17 @@
     .errbox{background:#FFF3F3;border:1px solid #FFAFAE;border-radius:var(--rs);padding:20px;color:var(--red);font-size:.9rem;text-align:center}
     .foot{text-align:center;font-size:.72rem;color:var(--txt2);padding:0 20px 28px;opacity:.65}
 
+    /* ── Conclusiones ── */
+    .concl-box{background:var(--surf);border-radius:var(--r);padding:22px 20px;border:1px solid var(--brd);box-shadow:var(--sh);margin-bottom:24px}
+    .concl-title{font-size:.88rem;font-weight:700;color:var(--vd);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .concl-item{font-size:.82rem;color:var(--txt);padding:8px 12px 8px 14px;border-left:4px solid var(--brd);border-radius:0 var(--rs) var(--rs) 0;margin-bottom:6px;line-height:1.55}
+    .concl-item:last-child{margin-bottom:0}
+    .concl-ok{border-left-color:var(--green);background:#f0fbf4}
+    .concl-warn{border-left-color:var(--orange);background:#fff4e6}
+    .concl-bad{border-left-color:var(--red);background:#fff0f0}
+    .concl-info{border-left-color:var(--blue);background:#f0f4ff}
+    .concl-neutral{border-left-color:var(--v);background:var(--surf2)}
+
     /* ── Responsive ── */
     @media(max-width:600px){
       .hdr{padding:0 14px;min-height:56px}.hdr-logo{height:36px}
@@ -532,18 +543,35 @@ async function loadEvolution() {
 
 // ── Evolución: renderizado ────────────────────────────────────────────
 function renderEvolution(items) {
-  // Orden cronológico (más antiguo primero en el gráfico)
+  // ordered = más antiguo [0] → más reciente [lastIdx]
   const ordered = [...items].reverse();
-  const labels = ordered.map(it => it.period.labelShort);
+  const labels  = ordered.map(it => it.period.labelShort);
+  const lastIdx = ordered.length - 1;
+  const periodWord = evoPeriod === 'sem' ? 'semana' : 'mes';
 
-  // Extraer métricas de sector por período
-  const sinDup   = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==92)||{}); return t.CantTkPend||0; });
-  const totPend  = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==90)||{}); return t.CantTkPend||0; });
-  const enProc   = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==90)||{}); return t.CantTkEnProc||0; });
-  const solucion = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==90)||{}); return t.CantTkSol||0; });
-  const vencidos = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==92)||{}); return t.CantTkVenc||0; });
+  // ── Métricas de sector por período ───────────────────────────────
+  const sinDup   = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==92)||{}).CantTkPend||0; });
+  const totPend  = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==90)||{}).CantTkPend||0; });
+  const enProc   = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==90)||{}).CantTkEnProc||0; });
+  const solucion = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==90)||{}).CantTkSol||0; });
+  const vencidos = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==92)||{}).CantTkVenc||0; });
 
-  // Construir HTML con controles
+  // ── Datos por analista: promedio + variación + orden por último período ─
+  const allAnasSet = new Set();
+  ordered.forEach(it => it.data.filter(r=>r.Gr==='A'&&r.Od!=90&&r.Od!=92).forEach(r=>allAnasSet.add(r.AnalistaProv.trim())));
+  const anaData = [...allAnasSet].map(name => {
+    const vals = ordered.map(it => {
+      const row = it.data.find(r=>r.Gr==='A'&&r.Od!=90&&r.Od!=92&&r.AnalistaProv.trim()===name);
+      return row ? (row.CantTkPend||0) : 0;
+    });
+    const lastVal  = vals[lastIdx];
+    const firstVal = vals[0];
+    const avg      = Math.round(vals.reduce((s,v)=>s+v,0) / vals.length * 10) / 10;
+    const varVal   = lastVal - firstVal;
+    return { name, vals, lastVal, firstVal, avg, varVal };
+  }).sort((a,b) => b.lastVal - a.lastVal); // Descendente por último período
+
+  // ── Controles ────────────────────────────────────────────────────
   let h = '';
   h += `<div class="evo-controls">
     <span class="evo-label">Período:</span>
@@ -560,100 +588,108 @@ function renderEvolution(items) {
   </div>`;
 
   if (evoViewMode === 'sector') {
-    // ── Vista Sector ──────────────────────────────────────────────────
+    // ── SECTOR: gráfico → tabla → conclusiones ────────────────────
     h += `<div class="card">
       <div class="card-title"><span class="dot dot-t"></span>Evolución de Pendientes — Sector (Gr=A)</div>
       <div style="position:relative;height:300px"><canvas id="cEvoSec"></canvas></div>
     </div>`;
 
-    // Tabla resumen
     h += `<div class="sec">Detalle por Período</div>`;
-    h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">`;
-    h += `<thead><tr>
-      <th>Período</th>
-      <th class="r">Pend. Sin Dup</th><th class="r">Pend. Total</th>
-      <th class="r">En Proceso</th><th class="r">Solucionados</th><th class="r">Vencidos</th>
-    </tr></thead><tbody>`;
+    h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr>
+        <th>Período</th>
+        <th class="r">Pend. Sin Dup</th><th class="r">Pend. Total</th>
+        <th class="r">En Proceso</th><th class="r">Solucionados</th><th class="r">Vencidos</th>
+      </tr></thead><tbody>`;
     ordered.forEach((it, idx) => {
-      const sdp = sinDup[idx], tp = totPend[idx], ep = enProc[idx], sol = solucion[idx], vec = vencidos[idx];
-      h += `<tr>
+      const isLast = idx === lastIdx;
+      const rowStyle = isLast ? ' style="background:linear-gradient(90deg,#e6f5f2,#d8f0ec)!important;font-weight:600"' : '';
+      h += `<tr${rowStyle}>
         <td style="font-weight:600">${it.period.label.replace(' (última cerrada)','')}</td>
-        <td class="r"><span class="chip chip-t">${fmtN(sdp)}</span></td>
-        <td class="r">${fmtN(tp)}</td>
-        <td class="r">${fmtN(ep)}</td>
-        <td class="r"><span class="chip chip-g">${fmtN(sol)}</span></td>
-        <td class="r">${vec > 0 ? `<span class="chip chip-r">${fmtN(vec)}</span>` : fmtN(vec)}</td>
+        <td class="r"><span class="chip chip-t">${fmtN(sinDup[idx])}</span></td>
+        <td class="r">${fmtN(totPend[idx])}</td>
+        <td class="r">${fmtN(enProc[idx])}</td>
+        <td class="r"><span class="chip chip-g">${fmtN(solucion[idx])}</span></td>
+        <td class="r">${vencidos[idx]>0?`<span class="chip chip-r">${fmtN(vencidos[idx])}</span>`:fmtN(vencidos[idx])}</td>
       </tr>`;
     });
     h += `</tbody></table></div></div>`;
+    h += buildSectorConclusions(sinDup, totPend, enProc, solucion, vencidos, ordered, periodWord, lastIdx);
 
   } else {
-    // ── Vista Por Analista ────────────────────────────────────────────
-    // Unión de todos los analistas presentes en los 4 períodos
-    const allAnasSet = new Set();
-    ordered.forEach(it => {
-      it.data.filter(r => r.Gr === 'A' && r.Od != 90 && r.Od != 92)
-             .forEach(r => allAnasSet.add(r.AnalistaProv.trim()));
-    });
-    const allAnas = [...allAnasSet].sort();
+    // ── ANALISTAS: tabla primero → gráfico → conclusiones ─────────
 
+    h += `<div class="sec">Pendientes por Analista <span class="sec-badge">Ordenado por período más reciente · ${ordered[lastIdx].period.labelShort}</span></div>`;
+    h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">
+      <thead><tr>
+        <th>#</th><th>Analista</th>`;
+    ordered.forEach(it => { h += `<th class="r">${it.period.labelShort}</th>`; });
+    h += `<th class="r" style="color:#007A6E">Promedio</th><th class="r">Var.</th>
+      </tr></thead><tbody>`;
+
+    anaData.forEach((a, i) => {
+      const rbCls = i===0?'rb rb1':i===1?'rb rb2':i===2?'rb rb3':'rb rbn';
+      const varChip = a.varVal > 0
+        ? `<span class="chip chip-r">&#9650;+${a.varVal}</span>`
+        : a.varVal < 0
+          ? `<span class="chip chip-g">&#9660;${a.varVal}</span>`
+          : `<span class="chip chip-gr">—</span>`;
+      h += `<tr>
+        <td><span class="${rbCls}">${i+1}</span></td>
+        <td style="font-weight:600;white-space:nowrap">${a.name}</td>`;
+      a.vals.forEach((v, vi) => {
+        const isLast = vi === lastIdx;
+        const cell = v > 0 ? fmtN(v) : '—';
+        h += isLast
+          ? `<td class="r"><strong>${cell}</strong></td>`
+          : `<td class="r" style="color:var(--txt2)">${cell}</td>`;
+      });
+      h += `<td class="r"><span class="chip chip-t">${fmtN(a.avg)}</span></td>
+        <td class="r">${varChip}</td>
+      </tr>`;
+    });
+
+    // Fila promedio sector por período
+    h += `<tr class="tr-tot"><td colspan="2">Promedio del Sector</td>`;
+    ordered.forEach((it, idx) => {
+      const avg = anaData.length ? Math.round(anaData.reduce((s,a)=>s+a.vals[idx],0)/anaData.length*10)/10 : 0;
+      h += `<td class="r">${fmtN(avg)}</td>`;
+    });
+    const globalAvg = anaData.length ? Math.round(anaData.reduce((s,a)=>s+a.avg,0)/anaData.length*10)/10 : 0;
+    h += `<td class="r"><span class="chip chip-t">${fmtN(globalAvg)}</span></td><td></td></tr>`;
+    h += `</tbody></table></div></div>`;
+
+    // Gráfico debajo de la tabla
     h += `<div class="card">
       <div class="card-title"><span class="dot"></span>Evolución de Pendientes por Analista</div>
       <div style="position:relative;height:clamp(280px,42vw,420px)"><canvas id="cEvoAna"></canvas></div>
     </div>`;
 
-    // Tabla cruzada
-    h += `<div class="sec">Pendientes por Analista y Período</div>`;
-    h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">`;
-    h += `<thead><tr><th>Analista</th>`;
-    ordered.forEach(it => { h += `<th class="r">${it.period.labelShort}</th>`; });
-    h += `<th class="r">Var.</th></tr></thead><tbody>`;
-    allAnas.forEach(name => {
-      const vals = ordered.map(it => {
-        const row = it.data.find(r => r.Gr === 'A' && r.Od != 90 && r.Od != 92 && r.AnalistaProv.trim() === name);
-        return row ? (row.CantTkPend || 0) : 0;
-      });
-      const first = vals[0], last = vals[vals.length-1];
-      const varVal = last - first;
-      const varChip = varVal > 0 ? `<span class="chip chip-r">+${varVal}</span>`
-                    : varVal < 0 ? `<span class="chip chip-g">${varVal}</span>`
-                    : `<span class="chip chip-gr">—</span>`;
-      h += `<tr><td style="font-weight:600;white-space:nowrap">${name}</td>`;
-      vals.forEach(v => { h += `<td class="r">${v > 0 ? fmtN(v) : '—'}</td>`; });
-      h += `<td class="r">${varChip}</td></tr>`;
-    });
-    h += `</tbody></table></div></div>`;
+    h += buildAnalystConclusions(anaData, ordered, periodWord, lastIdx);
   }
 
   document.getElementById('mainContent').innerHTML = h;
-  document.getElementById('foot').innerHTML =
-    `Tablero APD &middot; REX &nbsp;|&nbsp; Evolución &nbsp;|&nbsp; ${nowStr()}`;
+  document.getElementById('foot').innerHTML = `Tablero APD &middot; REX &nbsp;|&nbsp; Evolución &nbsp;|&nbsp; ${nowStr()}`;
 
-  // ── Renderizar gráficos de evolución ──────────────────────────────
+  // ── Gráficos ─────────────────────────────────────────────────────
   if (evoViewMode === 'sector') {
     chartEvoSec = new Chart(document.getElementById('cEvoSec'), {
       type: 'line',
       data: {
         labels,
         datasets: [
-          { label:'Pend. Sin Dup',  data: sinDup,   borderColor:'#007A6E', backgroundColor:'rgba(0,166,147,.12)', fill:true,  tension:.35, borderWidth:3, pointRadius:6, pointBackgroundColor:'#007A6E' },
-          { label:'Pend. Total',    data: totPend,  borderColor:'#6F05C1', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, borderDash:[5,4], pointRadius:5, pointBackgroundColor:'#6F05C1' },
-          { label:'En Proceso',     data: enProc,   borderColor:'#2957FF', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#2957FF' },
-          { label:'Solucionados',   data: solucion, borderColor:'#1DB954', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#1DB954' },
-          { label:'Vencidos',       data: vencidos, borderColor:'#E22626', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, borderDash:[3,3], pointRadius:5, pointBackgroundColor:'#E22626' },
+          { label:'Pend. Sin Dup', data:sinDup,   borderColor:'#007A6E', backgroundColor:'rgba(0,122,110,.10)', fill:true,  tension:.35, borderWidth:3, pointRadius:6, pointBackgroundColor:'#007A6E' },
+          { label:'Pend. Total',   data:totPend,  borderColor:'#6F05C1', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, borderDash:[5,4], pointRadius:5, pointBackgroundColor:'#6F05C1' },
+          { label:'En Proceso',    data:enProc,   borderColor:'#2957FF', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#2957FF' },
+          { label:'Solucionados',  data:solucion, borderColor:'#1DB954', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#1DB954' },
+          { label:'Vencidos',      data:vencidos, borderColor:'#E22626', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, borderDash:[3,3], pointRadius:5, pointBackgroundColor:'#E22626' },
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive:true, maintainAspectRatio:false,
         plugins: {
           legend: { position:'bottom', labels:{font:{size:11},padding:16} },
-          datalabels: {
-            display: true,
-            anchor: 'end', align: 'top',
-            formatter: v => v > 0 ? v : '',
-            color: ctx => ctx.dataset.borderColor,
-            font: { weight:'700', size:10 }
-          }
+          datalabels: { display:true, anchor:'end', align:'top', formatter:v=>v>0?v:'', color:ctx=>ctx.dataset.borderColor, font:{weight:'700',size:10} }
         },
         scales: {
           x: { grid:{color:'#E8E8E8'}, ticks:{font:{size:11}} },
@@ -662,34 +698,20 @@ function renderEvolution(items) {
       }
     });
   } else {
-    // Construir datasets por analista
-    const allAnasSet = new Set();
-    ordered.forEach(it => {
-      it.data.filter(r => r.Gr === 'A' && r.Od != 90 && r.Od != 92)
-             .forEach(r => allAnasSet.add(r.AnalistaProv.trim()));
-    });
-    const allAnas = [...allAnasSet].sort();
-
-    const datasets = allAnas.map((name, i) => {
+    const datasets = anaData.map((a, i) => {
       const color = ANA_COLORS[i % ANA_COLORS.length];
       return {
-        label: name.split(' ').slice(0,2).join(' '),
-        data: ordered.map(it => {
-          const row = it.data.find(r => r.Gr==='A' && r.Od!=90 && r.Od!=92 && r.AnalistaProv.trim()===name);
-          return row ? (row.CantTkPend||0) : 0;
-        }),
-        borderColor: color,
-        backgroundColor: 'transparent',
-        tension: .35, borderWidth: 2, pointRadius: 5,
-        pointBackgroundColor: color
+        label: a.name.split(' ').slice(0,2).join(' '),
+        data: a.vals,
+        borderColor: color, backgroundColor:'transparent',
+        tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:color
       };
     });
-
     chartEvoAna = new Chart(document.getElementById('cEvoAna'), {
       type: 'line',
       data: { labels, datasets },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive:true, maintainAspectRatio:false,
         plugins: {
           legend: { position:'bottom', labels:{font:{size:10},padding:10,boxWidth:12} },
           datalabels: { display:false }
@@ -701,6 +723,120 @@ function renderEvolution(items) {
       }
     });
   }
+}
+
+// ── Conclusiones: Sector ─────────────────────────────────────────────
+function buildSectorConclusions(sinDup, totPend, enProc, solucion, vencidos, ordered, periodWord, lastIdx) {
+  const lastSD = sinDup[lastIdx],  firstSD = sinDup[0],   deltaSD = lastSD - firstSD;
+  const lastV  = vencidos[lastIdx],firstV  = vencidos[0], deltaV  = lastV  - firstV;
+  const lastS  = solucion[lastIdx],firstS  = solucion[0], deltaS  = lastS  - firstS;
+  const lastEP = enProc[lastIdx],  lastTP  = totPend[lastIdx];
+  const lastLabel  = ordered[lastIdx].period.labelShort;
+  const firstLabel = ordered[0].period.labelShort;
+  const pctSinDup  = lastTP > 0 ? Math.round(lastSD / lastTP * 100) : 0;
+  const nPer = ordered.length;
+
+  const items = [];
+
+  // Tendencia Sin Dup
+  if (Math.abs(deltaSD) <= 2) {
+    items.push({ cls:'info', icon:'↔', text:`<strong>Carga estable:</strong> Los tickets pendientes sin duplicados se mantienen sin variación significativa en los ${nPer} períodos analizados (${fmtN(firstSD)} → ${fmtN(lastSD)}).` });
+  } else if (deltaSD > 0) {
+    items.push({ cls:'bad', icon:'↑', text:`<strong>Carga en aumento:</strong> Los pendientes sin duplicados subieron <strong>+${deltaSD}</strong> entre ${firstLabel} y ${lastLabel} (${fmtN(firstSD)} → ${fmtN(lastSD)}). Se recomienda revisar la priorización y la capacidad del equipo.` });
+  } else {
+    items.push({ cls:'ok', icon:'↓', text:`<strong>Carga en descenso:</strong> Los pendientes sin duplicados bajaron <strong>${deltaSD}</strong> entre ${firstLabel} y ${lastLabel} (${fmtN(firstSD)} → ${fmtN(lastSD)}). El equipo está resolviendo más de lo que ingresa.` });
+  }
+
+  // Vencidos
+  if (lastV === 0) {
+    items.push({ cls:'ok', icon:'✓', text:`<strong>Sin vencimientos en el último ${periodWord}:</strong> El sector cumple los SLA establecidos. Mantener el seguimiento preventivo.` });
+  } else if (deltaV > 2) {
+    items.push({ cls:'bad', icon:'!', text:`<strong>Vencidos en aumento:</strong> Subieron +${deltaV} en el período analizado (${fmtN(firstV)} → ${fmtN(lastV)}). Revisar asignaciones, fechas estimadas y tickets tipo PRJ / Mejoras con fecha comprometida.` });
+  } else if (deltaV < -2) {
+    items.push({ cls:'ok', icon:'↓', text:`<strong>Vencidos en descenso:</strong> Bajaron ${deltaV} (${fmtN(firstV)} → ${fmtN(lastV)}). Mejora en el cumplimiento de SLA.` });
+  } else {
+    items.push({ cls:'warn', icon:'~', text:`<strong>Vencidos estables con pendientes:</strong> Hay <strong>${fmtN(lastV)}</strong> tickets vencidos en ${lastLabel} sin variación significativa. Son tickets en proceso que superaron su fecha estimada o SLA.` });
+  }
+
+  // Solucionados
+  if (deltaS > 2) {
+    items.push({ cls:'ok', icon:'↑', text:`<strong>Resolución en aumento:</strong> Los tickets solucionados subieron +${deltaS} (${fmtN(firstS)} → ${fmtN(lastS)}). El equipo está mostrando mayor productividad.` });
+  } else if (deltaS < -2) {
+    items.push({ cls:'warn', icon:'↓', text:`<strong>Resolución en descenso:</strong> Los tickets solucionados bajaron ${deltaS} (${fmtN(firstS)} → ${fmtN(lastS)}). Verificar si hubo menor ingreso de tickets o menor capacidad disponible.` });
+  } else {
+    items.push({ cls:'info', icon:'↔', text:`<strong>Resolución estable:</strong> Los tickets solucionados se mantienen alrededor de ${fmtN(lastS)} por ${periodWord} en el período analizado.` });
+  }
+
+  // Estado actual
+  items.push({ cls:'neutral', icon:'📊', text:`<strong>Estado actual — ${lastLabel}:</strong> ${fmtN(lastSD)} tickets únicos pendientes (${pctSinDup}% del total bruto), ${fmtN(lastEP)} en proceso activo y ${fmtN(lastV)} vencidos.` });
+
+  return buildConclBox('Conclusiones del Período', items);
+}
+
+// ── Conclusiones: Por Analista ───────────────────────────────────────
+function buildAnalystConclusions(anaData, ordered, periodWord, lastIdx) {
+  if (!anaData.length) return '';
+  const lastLabel = ordered[lastIdx].period.labelShort;
+  const top       = anaData[0];
+  const bottom    = anaData[anaData.length - 1];
+  const byVar     = [...anaData].sort((a,b) => b.varVal - a.varVal);
+  const mostWorse = byVar[0];
+  const mostImprv = byVar[byVar.length - 1];
+  const activeAnas = anaData.filter(a => a.lastVal > 0);
+  const sectorAvg  = activeAnas.length ? Math.round(activeAnas.reduce((s,a)=>s+a.lastVal,0) / activeAnas.length) : 0;
+  const aboveAvg   = activeAnas.filter(a => a.lastVal > sectorAvg).length;
+  const nActive    = activeAnas.length;
+
+  const items = [];
+
+  // Analista con mayor carga
+  items.push({
+    cls: top.lastVal > 20 ? 'bad' : top.lastVal > 10 ? 'warn' : 'info',
+    icon: '↑',
+    text: `<strong>Mayor carga en ${lastLabel}:</strong> <strong>${top.name}</strong> con ${fmtN(top.lastVal)} tickets pendientes (promedio ${periodWord}al: ${fmtN(top.avg)}).`
+  });
+
+  // Analista con menor carga (solo si distinto y tiene tickets)
+  if (bottom.lastVal > 0 && bottom.name !== top.name) {
+    items.push({
+      cls: 'ok', icon: '↓',
+      text: `<strong>Menor carga en ${lastLabel}:</strong> <strong>${bottom.name}</strong> con ${fmtN(bottom.lastVal)} tickets pendientes.`
+    });
+  }
+
+  // Mayor deterioro (subió más)
+  if (mostWorse.varVal > 2) {
+    items.push({
+      cls: 'bad', icon: '!',
+      text: `<strong>Mayor aumento de carga:</strong> <strong>${mostWorse.name}</strong> incrementó <strong>+${mostWorse.varVal}</strong> tickets respecto al primer ${periodWord} analizado (${fmtN(mostWorse.firstVal)} → ${fmtN(mostWorse.lastVal)}).`
+    });
+  }
+
+  // Mayor mejora (bajó más)
+  if (mostImprv.varVal < -2) {
+    items.push({
+      cls: 'ok', icon: '↓',
+      text: `<strong>Mayor reducción de carga:</strong> <strong>${mostImprv.name}</strong> redujo <strong>${mostImprv.varVal}</strong> tickets respecto al primer ${periodWord} analizado (${fmtN(mostImprv.firstVal)} → ${fmtN(mostImprv.lastVal)}).`
+    });
+  }
+
+  // Distribución respecto al promedio
+  items.push({
+    cls: 'info', icon: '📊',
+    text: `<strong>Distribución del equipo — ${lastLabel}:</strong> Promedio del sector: <strong>${fmtN(sectorAvg)}</strong> tickets/analista. ${aboveAvg} de ${nActive} analistas activos están por encima del promedio${aboveAvg > nActive / 2 ? ' — la carga está concentrada en pocos analistas.' : '.'}`
+  });
+
+  return buildConclBox('Conclusiones y Análisis del Equipo', items);
+}
+
+// ── Helper para construir el bloque de conclusiones ──────────────────
+function buildConclBox(title, items) {
+  let h = `<div class="concl-box"><div class="concl-title">&#128202;&nbsp; ${title}</div>`;
+  items.forEach(it => {
+    h += `<div class="concl-item concl-${it.cls}">${it.text}</div>`;
+  });
+  h += `</div>`;
+  return h;
 }
 
 function showError(msg) {

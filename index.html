@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tablero APD - Rex</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--v:#6F05C1;--vd:#4D0797;--vl:#9B3FDE;--y:#FFCE00;--yd:#E6B800;--bg:#F4F5F7;--surf:#FFFFFF;--surf2:#F0EEF8;--txt:#1D1D1B;--txt2:#5A5A6A;--brd:#E2E0ED;--sh:0 2px 12px rgba(111,5,193,.10);--shh:0 6px 24px rgba(111,5,193,.18);--r:14px;--rs:8px;--green:#1DB954;--orange:#FF8C00;--red:#E22626;--blue:#2957FF}
+    html{font-size:16px}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+    .hdr{background:linear-gradient(135deg,var(--vd) 0%,var(--v) 60%,var(--vl) 100%);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 3px 18px rgba(77,7,151,.35);min-height:64px;position:sticky;top:0;z-index:200}
+    .hdr-brand{display:flex;align-items:center;gap:14px}
+    .hdr-logo{height:42px;width:auto;display:block;background:#fff;border-radius:6px;padding:3px 8px;object-fit:contain}
+    .hdr-title{font-size:1.05rem;font-weight:600;letter-spacing:.02em}
+    .hdr-title span{font-weight:300;opacity:.75;font-size:.9rem}
+    .hdr-meta{font-size:.75rem;opacity:.7;text-align:right;line-height:1.6}
+    .pbar{background:#fff;border-bottom:1px solid var(--brd);padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:64px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .pbar-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txt2)}
+    .ptabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px}
+    .ptab{padding:6px 16px;border-radius:6px;border:none;background:transparent;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--txt2);transition:all .2s}
+    .ptab.active{background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(111,5,193,.3)}
+    .pselect{padding:7px 12px;border:1px solid var(--brd);border-radius:8px;font-size:.82rem;font-weight:500;color:var(--txt);background:#fff;cursor:pointer;min-width:240px;outline:none}
+    .pselect:focus{border-color:var(--v);box-shadow:0 0 0 3px rgba(111,5,193,.12)}
+    .prange{font-size:.75rem;color:var(--txt2);background:var(--surf2);padding:5px 10px;border-radius:6px;border:1px solid var(--brd);white-space:nowrap}
+    .main{max-width:1200px;margin:0 auto;padding:24px 20px 48px}
+    .sec{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--v);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .sec::after{content:'';flex:1;height:2px;background:var(--brd);border-radius:2px}
+    .sec-badge{background:var(--surf2);color:var(--v);font-size:.68rem;padding:2px 8px;border-radius:99px;border:1px solid var(--brd);font-weight:700;white-space:nowrap}
+    .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+    .kcard{background:var(--surf);border-radius:var(--r);padding:18px 16px 14px;box-shadow:var(--sh);border:1px solid var(--brd);display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s}
+    .kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:var(--r) var(--r) 0 0}
+    .kcard.c-v::before{background:linear-gradient(90deg,var(--vd),var(--vl))}
+    .kcard.c-g::before{background:linear-gradient(90deg,#0D9E44,var(--green))}
+    .kcard.c-o::before{background:linear-gradient(90deg,#cc6600,var(--orange))}
+    .kcard.c-r::before{background:linear-gradient(90deg,#b01010,var(--red))}
+    .kcard.c-b::before{background:linear-gradient(90deg,#1a3dcc,var(--blue))}
+    .kcard.c-gr::before{background:linear-gradient(90deg,#666,#999)}
+    .kcard:hover{box-shadow:var(--shh);transform:translateY(-2px)}
+    .klabel{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--txt2)}
+    .kval{font-size:2.1rem;font-weight:800;line-height:1}
+    .kcard.c-v .kval{color:var(--v)}.kcard.c-g .kval{color:#0D9E44}.kcard.c-r .kval{color:var(--red)}.kcard.c-o .kval{color:#cc6600}.kcard.c-b .kval{color:#1a3dcc}.kcard.c-gr .kval{color:#555}
+    .ksub{font-size:.73rem;color:var(--txt2);margin-top:1px}
+    .kicon{position:absolute;top:14px;right:14px;font-size:1.1rem;font-weight:900;opacity:.09;letter-spacing:-.05em}
+    .card{background:var(--surf);border-radius:var(--r);padding:22px 20px;box-shadow:var(--sh);border:1px solid var(--brd);margin-bottom:24px}
+    .card-title{font-size:.85rem;font-weight:700;color:var(--txt);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--v);flex-shrink:0}
+    .dot-o{background:var(--orange)}
+    .tbl-wrap{overflow-x:auto}
+    .tbl{width:100%;border-collapse:collapse;font-size:.82rem}
+    .tbl thead tr{background:linear-gradient(135deg,var(--vd),var(--v));color:#fff}
+    .tbl thead th{padding:11px 13px;text-align:left;font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+    .tbl thead th:first-child{border-radius:var(--rs) 0 0 0}.tbl thead th:last-child{border-radius:0 var(--rs) 0 0}
+    .tbl thead th.r,.tbl td.r{text-align:right}
+    .tbl tbody tr{border-bottom:1px solid var(--brd);transition:background .15s}
+    .tbl tbody tr:last-child{border-bottom:none}
+    .tbl tbody tr:hover{background:var(--surf2)}
+    .tbl td{padding:11px 13px;vertical-align:middle}
+    .tbl tr.tr-tot{background:linear-gradient(90deg,#f5f0fc,#ede5f9)!important;font-weight:700;border-top:2px solid var(--v)}
+    .tbl tr.tr-tot:hover{background:linear-gradient(90deg,#ede5f9,#e0d0f5)!important}
+    .tbl tr.tr-tot2{background:linear-gradient(90deg,#f0faf4,#e0f5e8)!important;font-weight:700;border-top:1px dashed var(--green)}
+    .rb{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-weight:800;font-size:.75rem}
+    .rb1{background:#FFD700;color:#7A5900}.rb2{background:#C0C0C0;color:#444}.rb3{background:#CD7F32;color:#fff}.rbn{background:var(--surf2);color:var(--txt2)}
+    .chip{display:inline-block;padding:2px 8px;border-radius:6px;font-weight:700;font-size:.82rem}
+    .chip-r{background:#fff0f0;color:var(--red)}.chip-o{background:#fff4e6;color:#cc6600}.chip-g{background:#f0fbf4;color:#0D9E44}.chip-gr{background:var(--surf2);color:var(--txt2)}
+    .pb-wrap{width:100%;min-width:80px;background:var(--bg);border-radius:99px;height:7px;overflow:hidden}
+    .pb-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--vd),var(--vl))}
+    .twocol{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+    @media(max-width:780px){.twocol{grid-template-columns:1fr}}
+    .prov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+    .prov-card{background:var(--surf);border-radius:var(--rs);padding:14px 16px;box-shadow:var(--sh);border:1px solid var(--brd)}
+    .prov-name{font-size:.82rem;font-weight:700;color:var(--txt);margin-bottom:8px}
+    .prov-stats{display:flex;gap:8px;flex-wrap:wrap}
+    .prov-stat{font-size:.72rem;color:var(--txt2)}
+    .prov-stat strong{color:var(--txt)}
+    .loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px 20px;color:var(--txt2)}
+    .spin{width:40px;height:40px;border:4px solid var(--brd);border-top-color:var(--v);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .errbox{background:#FFF3F3;border:1px solid #FFAFAE;border-radius:var(--rs);padding:20px;color:var(--red);font-size:.9rem;text-align:center}
+    .foot{text-align:center;font-size:.72rem;color:var(--txt2);padding:0 20px 28px;opacity:.65}
+    @media(max-width:600px){.hdr{padding:0 14px;min-height:56px}.hdr-logo{height:36px}.pbar{top:56px;padding:10px 14px;gap:8px}.main{padding:16px 12px 40px}.kval{font-size:1.7rem}.tbl td,.tbl th{padding:9px 8px}.pselect{min-width:160px}}
+    @media(max-width:440px){.hdr-meta{display:none}.kgrid{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-brand">
+    <img src="Rex_Log.jpg" alt="Rex" class="hdr-logo"/>
+    <div><div class="hdr-title">Tablero APD <span>&middot; Aplicaciones y Desarrollos</span></div></div>
+  </div>
+  <div class="hdr-meta" id="hdrMeta">Cargando&hellip;</div>
+</header>
+
+<div class="pbar">
+  <span class="pbar-label">Periodo</span>
+  <div class="ptabs">
+    <button class="ptab active" id="tabSem" onclick="setMode('semana')">Semana</button>
+    <button class="ptab" id="tabMes" onclick="setMode('mes')">Mes</button>
+  </div>
+  <select class="pselect" id="pselect" onchange="onPeriodChange()"></select>
+  <span class="prange" id="prange">Seleccionando...</span>
+</div>
+
+<main class="main" id="mainContent">
+  <div class="loader"><div class="spin"></div><span>Consultando indicadores&hellip;</span></div>
+</main>
+<footer class="foot" id="foot"></footer>
+
+<script>
+Chart.register(ChartDataLabels);
+const API = 'https://api.somosrex.com/InfoExtra/KPI-APD';
+const fmtN = n => (n || 0).toLocaleString('es-AR');
+const pad  = n => String(n).padStart(2, '0');
+const fmtD = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+const fmtL = d => d.toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
+const nowStr = () => new Date().toLocaleString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+let mode = 'semana';
+let chartBar = null, chartStatus = null;
+
+// ── Generadores de periodos ────────────────────────────────────────
+function getWeeks(n = 12) {
+  const weeks = [], today = new Date();
+  const dow = today.getDay();           // 0=Dom, 1=Lun … 6=Sab
+  const dls = (dow === 0) ? 7 : dow;   // dias hasta el ultimo domingo completo
+  for (let i = 0; i < n; i++) {
+    const sun = new Date(today); sun.setDate(today.getDate() - dls - i * 7);
+    const mon = new Date(sun);   mon.setDate(sun.getDate() - 6);
+    weeks.push({
+      desde : mon,
+      hasta : sun,
+      label : `Sem ${fmtL(mon)} - ${fmtL(sun)}` + (i === 0 ? ' (ultima cerrada)' : '')
+    });
+  }
+  return weeks;
+}
+
+function getMonths(n = 12) {
+  const months = [], today = new Date();
+  for (let i = 1; i <= n; i++) {
+    const d     = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const desde = new Date(d.getFullYear(), d.getMonth(), 1);
+    const hasta = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    const lbl   = desde.toLocaleString('es-AR', {month:'long', year:'numeric'});
+    months.push({ desde, hasta, label: lbl.charAt(0).toUpperCase() + lbl.slice(1) });
+  }
+  return months;
+}
+
+// ── Selector ──────────────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.getElementById('tabSem').classList.toggle('active', m === 'semana');
+  document.getElementById('tabMes').classList.toggle('active', m === 'mes');
+  populateSelect();
+  loadData();
+}
+
+function populateSelect() {
+  const sel = document.getElementById('pselect');
+  sel.innerHTML = '';
+  (mode === 'semana' ? getWeeks() : getMonths()).forEach((it, i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = it.label;
+    sel.appendChild(o);
+  });
+}
+
+function getSelected() {
+  const i = parseInt(document.getElementById('pselect').value || '0');
+  const items = mode === 'semana' ? getWeeks() : getMonths();
+  return items[i] || items[0];
+}
+
+function onPeriodChange() { loadData(); }
+
+// ── API fetch ─────────────────────────────────────────────────────
+function loadData() {
+    const p = getSelected();
+    document.getElementById('prange').textContent = `${fmtL(p.desde)} al ${fmtL(p.hasta)}`;
+    document.getElementById('mainContent').innerHTML = 
+        '<div class="loader"><div class="spin"></div><span>Cargando datos&hellip;</span></div>';
+    destroyCharts();
+
+    // 1. Definimos el origen del proxy (funciona igual en local o en la web)
+    const PROXY = window.location.origin + "/?url=";
+    
+    // 2. Armamos la URL de la API de Rex
+    const apiRex = `${API}?buscaDato1=PENDIENTES&buscaDato2=${fmtD(p.desde)}&buscaDato3=${fmtD(p.hasta)}`;
+
+    // 3. Concatenamos ambas usando encodeURIComponent
+    const urlFinal = `${PROXY}${encodeURIComponent(apiRex)}`;
+
+    fetch(urlFinal)
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(data => {
+            console.log("Datos recibidos:", data);
+            // Aquí sigue tu lógica para procesar los datos y armar los gráficos
+            // (Asegurate de que la función que procesa los datos se llame aquí)
+            procesarDatos(data); 
+        })
+        .catch(e => {
+            console.error(e);
+            document.getElementById('mainContent').innerHTML = 
+                `<div class="error">No se pudo obtener los datos<br><small>${e.message}</small></div>`;
+        });
+}
+
+function destroyCharts() {
+  if (chartBar)    { chartBar.destroy();    chartBar    = null; }
+  if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
+}
+
+// ── Render ────────────────────────────────────────────────────────
+function render(data, period) {
+  const grA   = data.filter(r => r.Gr === 'A');
+  const grAP  = data.filter(r => r.Gr === 'AP');
+  // eslint-disable-next-line eqeqeq  (Od puede llegar como string o number)
+  const tA    = grA.find(r => r.Od == 90) || {};
+  const tA2   = grA.find(r => r.Od == 92) || {};
+  const tAP   = grAP.find(r => r.Od == 90) || {};
+  const anas  = grA.filter(r => r.Od != 90 && r.Od != 92).sort((a,b) => b.CantTkPend - a.CantTkPend);
+  const provs = grAP.filter(r => r.Od != 90);
+  const maxP  = anas[0]?.CantTkPend || 1;
+
+  document.getElementById('hdrMeta').innerHTML = `Actualizado: <strong>${nowStr()}</strong>`;
+
+  let h = '';
+
+  // ── KPI ──
+  h += `<div class="sec">Resumen del Periodo <span class="sec-badge">Analistas Internos · Gr=A</span></div>`;
+  h += `<div class="kgrid">`;
+  const kc = (cls, ico, lbl, val, sub) =>
+    `<div class="kcard ${cls}"><div class="kicon">${ico}</div><div class="klabel">${lbl}</div><div class="kval">${fmtN(val)}</div><div class="ksub">${sub}</div></div>`;
+  h += kc('c-v', 'PEND', 'Pendientes Total',   tA.CantTkPend,      'Tickets abiertos al cierre');
+  h += kc('c-b', 'PROC', 'En Proceso',          tA.CantTkEnProc,    'Siendo atendidos ahora');
+  h += kc('c-o', 'ESPE', 'En Espera',           tA.CantTkEspera,    'Aguardando respuesta');
+  h += kc('c-g', 'SOL',  'Solucionados',        tA.CantTkSol,       'Cerrados en el periodo');
+  h += kc('c-r', 'VENC', 'Vencidos (SLA)',      tA2.CantTkVenc || 0,'Incumplimiento de SLA');
+  h += kc('c-gr','SDUP', 'Pend. Sin Duplicados',tA2.CantTkPend,     'Tickets unicos abiertos');
+  h += `</div>`;
+
+  // ── Charts ──
+  h += `<div class="twocol">`;
+  h += `<div class="card"><div class="card-title"><span class="dot"></span>Ranking Pendientes por Analista</div>
+        <div style="position:relative;height:clamp(200px,36vw,320px)"><canvas id="cBar"></canvas></div></div>`;
+  h += `<div class="card"><div class="card-title"><span class="dot dot-o"></span>Distribucion de Estados &mdash; Totales Internos</div>
+        <div style="position:relative;height:clamp(200px,36vw,320px)"><canvas id="cStatus"></canvas></div></div>`;
+  h += `</div>`;
+
+  // ── Tabla analistas ──
+  h += `<div class="sec">Detalle por Analista <span class="sec-badge">Internos</span></div>`;
+  h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">`;
+  h += `<thead><tr>
+    <th>#</th><th>Analista</th>
+    <th class="r">Pendientes</th><th class="r">En Proceso</th><th class="r">En Espera</th>
+    <th class="r">Entregados</th><th class="r">Solucionados</th><th class="r">Vencidos</th>
+    <th style="min-width:90px">Carga</th>
+  </tr></thead><tbody>`;
+
+  anas.forEach((r, i) => {
+    const pc = r.CantTkPend > 20 ? 'chip-r' : r.CantTkPend > 10 ? 'chip-o' : 'chip-gr';
+    const rbCls = i === 0 ? 'rb rb1' : i === 1 ? 'rb rb2' : i === 2 ? 'rb rb3' : 'rb rbn';
+    h += `<tr>
+      <td><span class="${rbCls}">${i+1}</span></td>
+      <td style="font-weight:600;white-space:nowrap">${r.AnalistaProv.trim()}</td>
+      <td class="r"><span class="chip ${pc}">${fmtN(r.CantTkPend)}</span></td>
+      <td class="r">${fmtN(r.CantTkEnProc)}</td>
+      <td class="r">${r.CantTkEspera > 0 ? `<span class="chip chip-o">${fmtN(r.CantTkEspera)}</span>` : fmtN(r.CantTkEspera)}</td>
+      <td class="r">${fmtN(r.CantTkEntr)}</td>
+      <td class="r"><span class="chip chip-g">${fmtN(r.CantTkSol)}</span></td>
+      <td class="r">${r.CantTkVenc > 0 ? `<span class="chip chip-r">${fmtN(r.CantTkVenc)}</span>` : fmtN(r.CantTkVenc)}</td>
+      <td><div class="pb-wrap"><div class="pb-bar" style="width:${Math.round(r.CantTkPend / maxP * 100)}%"></div></div></td>
+    </tr>`;
+  });
+
+  h += `<tr class="tr-tot">
+    <td colspan="2" style="font-size:.75rem;letter-spacing:.06em">TOTALES</td>
+    <td class="r">${fmtN(tA.CantTkPend)}</td><td class="r">${fmtN(tA.CantTkEnProc)}</td>
+    <td class="r">${fmtN(tA.CantTkEspera)}</td><td class="r">${fmtN(tA.CantTkEntr)}</td>
+    <td class="r">${fmtN(tA.CantTkSol)}</td><td class="r">${fmtN(tA.CantTkVenc)}</td><td></td>
+  </tr>`;
+  h += `<tr class="tr-tot2">
+    <td colspan="2" style="font-size:.75rem;letter-spacing:.06em;color:#0D9E44">SIN DUPLICADOS</td>
+    <td class="r">${fmtN(tA2.CantTkPend)}</td><td class="r">${fmtN(tA2.CantTkEnProc)}</td>
+    <td class="r">${fmtN(tA2.CantTkEspera)}</td><td class="r">${fmtN(tA2.CantTkEntr)}</td>
+    <td class="r">${fmtN(tA2.CantTkSol)}</td><td class="r">${fmtN(tA2.CantTkVenc || 0)}</td><td></td>
+  </tr>`;
+  h += `</tbody></table></div></div>`;
+
+  // ── Proveedores ──
+  h += `<div class="sec">Proveedores Externos <span class="sec-badge">Gr=AP</span></div>`;
+  h += `<div class="prov-grid">`;
+  provs.forEach(r => {
+    h += `<div class="prov-card">
+      <div class="prov-name">${r.AnalistaProv.trim()}</div>
+      <div class="prov-stats">
+        <span class="prov-stat">Pend: <strong style="color:${r.CantTkPend > 0 ? 'var(--red)' : 'var(--green)'}">${fmtN(r.CantTkPend)}</strong></span>
+        <span class="prov-stat">En Proc: <strong>${fmtN(r.CantTkEnProc)}</strong></span>
+        <span class="prov-stat">Sol: <strong style="color:var(--green)">${fmtN(r.CantTkSol)}</strong></span>
+        ${r.CantTkVenc > 0 ? `<span class="prov-stat">Venc: <strong style="color:var(--red)">${fmtN(r.CantTkVenc)}</strong></span>` : ''}
+      </div>
+    </div>`;
+  });
+  h += `<div class="prov-card" style="border-color:var(--v);background:var(--surf2)">
+    <div class="prov-name" style="color:var(--v)">TOTAL PROVEEDORES</div>
+    <div class="prov-stats">
+      <span class="prov-stat">Pend: <strong style="color:var(--v)">${fmtN(tAP.CantTkPend)}</strong></span>
+      <span class="prov-stat">En Proc: <strong>${fmtN(tAP.CantTkEnProc)}</strong></span>
+      <span class="prov-stat">Sol: <strong style="color:var(--green)">${fmtN(tAP.CantTkSol)}</strong></span>
+    </div>
+  </div>`;
+  h += `</div>`;
+
+  document.getElementById('mainContent').innerHTML = h;
+  document.getElementById('foot').innerHTML =
+    `Tablero APD &middot; REX &nbsp;|&nbsp; api.somosrex.com &nbsp;|&nbsp; ${nowStr()}`;
+
+  // ── Graficos ──
+  const names  = anas.map(r => r.AnalistaProv.trim().split(' ').slice(0,2).join(' '));
+  const pends  = anas.map(r => r.CantTkPend);
+  const bClrs  = pends.map((_, i) => `rgba(111,5,193,${1 - i / Math.max(pends.length - 1, 1) * 0.65})`);
+
+  const totalPends = pends.reduce((a,b) => a+b, 0);
+  chartBar = new Chart(document.getElementById('cBar'), {
+    type: 'bar',
+    data: { labels: names, datasets: [{ label:'Pendientes', data:pends, backgroundColor:bClrs, borderRadius:5, borderSkipped:false }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 90 } },
+      plugins: {
+        legend: { display:false },
+        tooltip: { callbacks:{ label: c => ` ${c.raw} pendientes` }},
+        datalabels: {
+          anchor: 'end',
+          align: 'end',
+          formatter: (value) => {
+            const pct = totalPends > 0 ? ((value / totalPends) * 100).toFixed(1) : 0;
+            return `${value}  (${pct}%)`;
+          },
+          color: '#1D1D1B',
+          font: { weight: '700', size: 10 }
+        }
+      },
+      scales: {
+        x: { grid:{color:'#E8E8E8'}, ticks:{color:'#5A5A6A',font:{size:10}}, max: Math.max(...pends) * 1.45 },
+        y: { grid:{display:false}, ticks:{color:'#1D1D1B',font:{size:11,weight:'600'}} }
+      }
+    }
+  });
+
+  chartStatus = new Chart(document.getElementById('cStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: ['En Proceso','En Espera','Entregados','Solucionados','Vencidos'],
+      datasets: [{
+        data: [tA.CantTkEnProc, tA.CantTkEspera, tA.CantTkEntr, tA.CantTkSol, tA2.CantTkVenc || 0],
+        backgroundColor: ['#2957FF','#FF8C00','#9B3FDE','#1DB954','#E22626'],
+        borderWidth: 2, borderColor: '#fff', hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position:'right', labels:{ font:{size:11}, color:'#1D1D1B', boxWidth:12, padding:10 }},
+        tooltip: { callbacks:{ label: c => ` ${c.label}: ${fmtN(c.raw)}` }},
+        datalabels: {
+          display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0,
+          formatter: (value, ctx) => {
+            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+            return `${value}\n${pct}%`;
+          },
+          color: '#fff',
+          font: { weight: '700', size: 11 },
+          textAlign: 'center'
+        }
+      },
+      cutout: '60%'
+    }
+  });
+}
+
+function showError(msg) {
+  document.getElementById('mainContent').innerHTML =
+    `<div class="errbox"><strong>No se pudo obtener los datos</strong><br>${msg}<br><br>
+     <small>Verificar: <code>${API}</code></small></div>`;
+  document.getElementById('hdrMeta').textContent = 'Error al cargar';
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+populateSelect();
+loadData();
+</script>
+</body>
+</html>

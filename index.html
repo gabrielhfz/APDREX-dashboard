@@ -8,30 +8,49 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--v:#6F05C1;--vd:#4D0797;--vl:#9B3FDE;--y:#FFCE00;--yd:#E6B800;--bg:#F4F5F7;--surf:#FFFFFF;--surf2:#F0EEF8;--txt:#1D1D1B;--txt2:#5A5A6A;--brd:#E2E0ED;--sh:0 2px 12px rgba(111,5,193,.10);--shh:0 6px 24px rgba(111,5,193,.18);--r:14px;--rs:8px;--green:#1DB954;--orange:#FF8C00;--red:#E22626;--blue:#2957FF}
+    :root{
+      --v:#6F05C1;--vd:#4D0797;--vl:#9B3FDE;
+      --y:#FFCE00;--yd:#E6B800;
+      --t:#00A693;--td:#007A6E;
+      --bg:#F4F5F7;--surf:#FFFFFF;--surf2:#F0EEF8;
+      --txt:#1D1D1B;--txt2:#5A5A6A;--brd:#E2E0ED;
+      --sh:0 2px 12px rgba(111,5,193,.10);--shh:0 6px 24px rgba(111,5,193,.18);
+      --r:14px;--rs:8px;
+      --green:#1DB954;--orange:#FF8C00;--red:#E22626;--blue:#2957FF
+    }
     html{font-size:16px}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+
+    /* ── Header ── */
     .hdr{background:linear-gradient(135deg,var(--vd) 0%,var(--v) 60%,var(--vl) 100%);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 3px 18px rgba(77,7,151,.35);min-height:64px;position:sticky;top:0;z-index:200}
     .hdr-brand{display:flex;align-items:center;gap:14px}
     .hdr-logo{height:42px;width:auto;display:block;background:#fff;border-radius:6px;padding:3px 8px;object-fit:contain}
     .hdr-title{font-size:1.05rem;font-weight:600;letter-spacing:.02em}
     .hdr-title span{font-weight:300;opacity:.75;font-size:.9rem}
     .hdr-meta{font-size:.75rem;opacity:.7;text-align:right;line-height:1.6}
-    .pbar{background:#fff;border-bottom:1px solid var(--brd);padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:64px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-    .pbar-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txt2)}
+
+    /* ── Period bar ── */
+    .pbar{background:#fff;border-bottom:1px solid var(--brd);padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:64px;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .pbar-sep{width:1px;height:22px;background:var(--brd);flex-shrink:0}
+    .pbar-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txt2);white-space:nowrap}
     .ptabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px}
     .ptab{padding:6px 16px;border-radius:6px;border:none;background:transparent;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--txt2);transition:all .2s}
     .ptab.active{background:var(--v);color:#fff;box-shadow:0 2px 8px rgba(111,5,193,.3)}
     .pselect{padding:7px 12px;border:1px solid var(--brd);border-radius:8px;font-size:.82rem;font-weight:500;color:var(--txt);background:#fff;cursor:pointer;min-width:240px;outline:none}
     .pselect:focus{border-color:var(--v);box-shadow:0 0 0 3px rgba(111,5,193,.12)}
     .prange{font-size:.75rem;color:var(--txt2);background:var(--surf2);padding:5px 10px;border-radius:6px;border:1px solid var(--brd);white-space:nowrap}
+
+    /* ── Layout ── */
     .main{max-width:1200px;margin:0 auto;padding:24px 20px 48px}
     .sec{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--v);margin-bottom:14px;display:flex;align-items:center;gap:8px}
     .sec::after{content:'';flex:1;height:2px;background:var(--brd);border-radius:2px}
     .sec-badge{background:var(--surf2);color:var(--v);font-size:.68rem;padding:2px 8px;border-radius:99px;border:1px solid var(--brd);font-weight:700;white-space:nowrap}
+
+    /* ── KPI Cards ── */
     .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px}
     .kcard{background:var(--surf);border-radius:var(--r);padding:18px 16px 14px;box-shadow:var(--sh);border:1px solid var(--brd);display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s}
     .kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:var(--r) var(--r) 0 0}
+    .kcard.c-t::before{background:linear-gradient(90deg,var(--td),var(--t))}
     .kcard.c-v::before{background:linear-gradient(90deg,var(--vd),var(--vl))}
     .kcard.c-g::before{background:linear-gradient(90deg,#0D9E44,var(--green))}
     .kcard.c-o::before{background:linear-gradient(90deg,#cc6600,var(--orange))}
@@ -41,13 +60,24 @@
     .kcard:hover{box-shadow:var(--shh);transform:translateY(-2px)}
     .klabel{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--txt2)}
     .kval{font-size:2.1rem;font-weight:800;line-height:1}
-    .kcard.c-v .kval{color:var(--v)}.kcard.c-g .kval{color:#0D9E44}.kcard.c-r .kval{color:var(--red)}.kcard.c-o .kval{color:#cc6600}.kcard.c-b .kval{color:#1a3dcc}.kcard.c-gr .kval{color:#555}
+    .kcard.c-t .kval{color:var(--td)}
+    .kcard.c-v .kval{color:var(--v)}
+    .kcard.c-g .kval{color:#0D9E44}
+    .kcard.c-r .kval{color:var(--red)}
+    .kcard.c-o .kval{color:#cc6600}
+    .kcard.c-b .kval{color:#1a3dcc}
+    .kcard.c-gr .kval{color:#555}
     .ksub{font-size:.73rem;color:var(--txt2);margin-top:1px}
     .kicon{position:absolute;top:14px;right:14px;font-size:1.1rem;font-weight:900;opacity:.09;letter-spacing:-.05em}
+
+    /* ── Cards genéricas ── */
     .card{background:var(--surf);border-radius:var(--r);padding:22px 20px;box-shadow:var(--sh);border:1px solid var(--brd);margin-bottom:24px}
     .card-title{font-size:.85rem;font-weight:700;color:var(--txt);margin-bottom:16px;display:flex;align-items:center;gap:8px}
     .dot{width:10px;height:10px;border-radius:50%;background:var(--v);flex-shrink:0}
     .dot-o{background:var(--orange)}
+    .dot-t{background:var(--t)}
+
+    /* ── Tabla analistas ── */
     .tbl-wrap{overflow-x:auto}
     .tbl{width:100%;border-collapse:collapse;font-size:.82rem}
     .tbl thead tr{background:linear-gradient(135deg,var(--vd),var(--v));color:#fff}
@@ -60,27 +90,58 @@
     .tbl td{padding:11px 13px;vertical-align:middle}
     .tbl tr.tr-tot{background:linear-gradient(90deg,#f5f0fc,#ede5f9)!important;font-weight:700;border-top:2px solid var(--v)}
     .tbl tr.tr-tot:hover{background:linear-gradient(90deg,#ede5f9,#e0d0f5)!important}
-    .tbl tr.tr-tot2{background:linear-gradient(90deg,#f0faf4,#e0f5e8)!important;font-weight:700;border-top:1px dashed var(--green)}
+    .tbl tr.tr-tot2{background:linear-gradient(90deg,#e6f8f6,#d0f0ec)!important;font-weight:700;border-top:2px dashed var(--t)}
+    .tbl tr.tr-tot2:hover{background:linear-gradient(90deg,#d0f0ec,#b8e8e3)!important}
+
+    /* ── Badges y chips ── */
     .rb{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-weight:800;font-size:.75rem}
     .rb1{background:#FFD700;color:#7A5900}.rb2{background:#C0C0C0;color:#444}.rb3{background:#CD7F32;color:#fff}.rbn{background:var(--surf2);color:var(--txt2)}
     .chip{display:inline-block;padding:2px 8px;border-radius:6px;font-weight:700;font-size:.82rem}
-    .chip-r{background:#fff0f0;color:var(--red)}.chip-o{background:#fff4e6;color:#cc6600}.chip-g{background:#f0fbf4;color:#0D9E44}.chip-gr{background:var(--surf2);color:var(--txt2)}
+    .chip-r{background:#fff0f0;color:var(--red)}
+    .chip-o{background:#fff4e6;color:#cc6600}
+    .chip-g{background:#f0fbf4;color:#0D9E44}
+    .chip-t{background:#e6f8f6;color:var(--td)}
+    .chip-gr{background:var(--surf2);color:var(--txt2)}
+
+    /* ── Progress bar ── */
     .pb-wrap{width:100%;min-width:80px;background:var(--bg);border-radius:99px;height:7px;overflow:hidden}
     .pb-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--vd),var(--vl))}
+
+    /* ── Two-col layout ── */
     .twocol{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
     @media(max-width:780px){.twocol{grid-template-columns:1fr}}
-    .prov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
-    .prov-card{background:var(--surf);border-radius:var(--rs);padding:14px 16px;box-shadow:var(--sh);border:1px solid var(--brd)}
-    .prov-name{font-size:.82rem;font-weight:700;color:var(--txt);margin-bottom:8px}
-    .prov-stats{display:flex;gap:8px;flex-wrap:wrap}
-    .prov-stat{font-size:.72rem;color:var(--txt2)}
-    .prov-stat strong{color:var(--txt)}
+
+    /* ── Proveedores ── */
+    .prov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:24px}
+    .prov-card{background:var(--surf);border-radius:var(--rs);padding:14px 16px;box-shadow:var(--sh);border:1px solid var(--brd);border-left:4px solid var(--brd);transition:box-shadow .2s}
+    .prov-card.alert{border-left-color:var(--red)}
+    .prov-card.ok{border-left-color:var(--green)}
+    .prov-card:hover{box-shadow:var(--shh)}
+    .prov-name{font-size:.82rem;font-weight:700;color:var(--txt);margin-bottom:10px}
+    .prov-stats{display:flex;flex-direction:column;gap:5px}
+    .prov-stat{display:flex;justify-content:space-between;align-items:center;font-size:.78rem}
+    .prov-stat-lbl{color:var(--txt2)}
+    .prov-stat-val{font-weight:700;color:var(--txt)}
+    .prov-total-card{background:linear-gradient(135deg,#f5f0fc,#ede5f9);border-color:var(--v)}
+
+    /* ── Evolución ── */
+    .evo-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--surf);border-radius:var(--r);padding:14px 18px;border:1px solid var(--brd);box-shadow:var(--sh);margin-bottom:20px}
+    .evo-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--txt2);white-space:nowrap}
+
+    /* ── Misc ── */
     .loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:60px 20px;color:var(--txt2)}
     .spin{width:40px;height:40px;border:4px solid var(--brd);border-top-color:var(--v);border-radius:50%;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
     .errbox{background:#FFF3F3;border:1px solid #FFAFAE;border-radius:var(--rs);padding:20px;color:var(--red);font-size:.9rem;text-align:center}
     .foot{text-align:center;font-size:.72rem;color:var(--txt2);padding:0 20px 28px;opacity:.65}
-    @media(max-width:600px){.hdr{padding:0 14px;min-height:56px}.hdr-logo{height:36px}.pbar{top:56px;padding:10px 14px;gap:8px}.main{padding:16px 12px 40px}.kval{font-size:1.7rem}.tbl td,.tbl th{padding:9px 8px}.pselect{min-width:160px}}
+
+    /* ── Responsive ── */
+    @media(max-width:600px){
+      .hdr{padding:0 14px;min-height:56px}.hdr-logo{height:36px}
+      .pbar{top:56px;padding:8px 14px;gap:8px}
+      .main{padding:16px 12px 40px}.kval{font-size:1.7rem}
+      .tbl td,.tbl th{padding:9px 8px}.pselect{min-width:160px}
+    }
     @media(max-width:440px){.hdr-meta{display:none}.kgrid{grid-template-columns:1fr 1fr}}
   </style>
 </head>
@@ -95,13 +156,22 @@
 </header>
 
 <div class="pbar">
-  <span class="pbar-label">Periodo</span>
+  <!-- Vista principal -->
   <div class="ptabs">
-    <button class="ptab active" id="tabSem" onclick="setMode('semana')">Semana</button>
-    <button class="ptab" id="tabMes" onclick="setMode('mes')">Mes</button>
+    <button class="ptab active" id="vTab0" onclick="setView('resumen')">&#9642; Resumen</button>
+    <button class="ptab" id="vTab1" onclick="setView('evolucion')">&#8679; Evolución</button>
   </div>
-  <select class="pselect" id="pselect" onchange="onPeriodChange()"></select>
-  <span class="prange" id="prange">Seleccionando...</span>
+  <div class="pbar-sep"></div>
+  <!-- Controles de período (solo en Resumen) -->
+  <div id="periodControls" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span class="pbar-label">Periodo</span>
+    <div class="ptabs">
+      <button class="ptab active" id="tabSem" onclick="setMode('semana')">Semana</button>
+      <button class="ptab" id="tabMes" onclick="setMode('mes')">Mes</button>
+    </div>
+    <select class="pselect" id="pselect" onchange="onPeriodChange()"></select>
+    <span class="prange" id="prange">Seleccionando...</span>
+  </div>
 </div>
 
 <main class="main" id="mainContent">
@@ -111,16 +181,32 @@
 
 <script>
 Chart.register(ChartDataLabels);
+
 const API_BASE = 'https://api.somosrex.com/InfoExtra/KPI-APD';
 const fmtN = n => (n || 0).toLocaleString('es-AR');
 const pad  = n => String(n).padStart(2, '0');
 const fmtD = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
 const fmtL = d => d.toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
+const fmtLsh = d => d.toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit'});
 const nowStr = () => new Date().toLocaleString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 
 let mode = 'semana';
+let currentView = 'resumen';
 let chartBar = null, chartStatus = null;
+let chartEvoSec = null, chartEvoAna = null;
 
+// Cache para evolución
+let evoCache = { sem: null, mes: null };
+let evoPeriod = 'sem';
+let evoViewMode = 'sector';
+
+// Colores para líneas de analistas en el chart de evolución
+const ANA_COLORS = [
+  '#6F05C1','#2957FF','#1DB954','#E22626','#FF8C00',
+  '#00A693','#E91E8C','#795548','#607D8B','#FF5722','#9C27B0','#009688'
+];
+
+// ── Generadores de períodos ──────────────────────────────────────────
 function getWeeks(n = 12) {
   const weeks = [], today = new Date();
   const dow = today.getDay();
@@ -130,7 +216,8 @@ function getWeeks(n = 12) {
     const mon = new Date(sun); mon.setDate(sun.getDate() - 6);
     weeks.push({
       desde: mon, hasta: sun,
-      label: `Sem ${fmtL(mon)} - ${fmtL(sun)}` + (i === 0 ? ' (última cerrada)' : '')
+      label: `Sem ${fmtL(mon)} - ${fmtL(sun)}` + (i === 0 ? ' (última cerrada)' : ''),
+      labelShort: `${fmtLsh(mon)}-${fmtLsh(sun)}`
     });
   }
   return weeks;
@@ -143,11 +230,27 @@ function getMonths(n = 12) {
     const desde = new Date(d.getFullYear(), d.getMonth(), 1);
     const hasta = new Date(d.getFullYear(), d.getMonth() + 1, 0);
     const lbl = desde.toLocaleString('es-AR', {month:'long', year:'numeric'});
-    months.push({ desde, hasta, label: lbl.charAt(0).toUpperCase() + lbl.slice(1) });
+    const lblCap = lbl.charAt(0).toUpperCase() + lbl.slice(1);
+    months.push({ desde, hasta, label: lblCap, labelShort: lblCap.split(' ')[0].slice(0,3) + ' ' + lblCap.split(' ')[2] });
   }
   return months;
 }
 
+// ── Control de vista principal ───────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.getElementById('vTab0').classList.toggle('active', v === 'resumen');
+  document.getElementById('vTab1').classList.toggle('active', v === 'evolucion');
+  document.getElementById('periodControls').style.display = v === 'resumen' ? 'flex' : 'none';
+  destroyCharts();
+  if (v === 'resumen') {
+    loadData();
+  } else {
+    loadEvolution();
+  }
+}
+
+// ── Resumen: control de período ──────────────────────────────────────
 function setMode(m) {
   mode = m;
   document.getElementById('tabSem').classList.toggle('active', m === 'semana');
@@ -155,7 +258,6 @@ function setMode(m) {
   populateSelect();
   loadData();
 }
-
 function populateSelect() {
   const sel = document.getElementById('pselect');
   sel.innerHTML = '';
@@ -165,54 +267,48 @@ function populateSelect() {
     sel.appendChild(o);
   });
 }
-
 function getSelected() {
   const i = parseInt(document.getElementById('pselect').value || '0');
   const items = mode === 'semana' ? getWeeks() : getMonths();
   return items[i] || items[0];
 }
-
 function onPeriodChange() { loadData(); }
 
-function loadData() {
-    const p = getSelected();
-    document.getElementById('prange').textContent = `${fmtL(p.desde)} al ${fmtL(p.hasta)}`;
-    document.getElementById('mainContent').innerHTML = 
-        '<div class="loader"><div class="spin"></div><span>Cargando datos&hellip;</span></div>';
-    destroyCharts();
-
-    const PROXY = window.location.origin + "/proxy?url=";
-    const apiRex = `${API_BASE}?buscaDato1=PENDIENTES&buscaDato2=${fmtD(p.desde)}&buscaDato3=${fmtD(p.hasta)}`;
-    const urlFinal = `${PROXY}${encodeURIComponent(apiRex)}`;
-
-    fetch(urlFinal)
-        .then(r => {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        })
-        .then(data => {
-            procesarDatos(data, p);
-        })
-        .catch(e => {
-            console.error(e);
-            showError(e.message);
-        });
+// ── Fetch genérico a través del proxy ───────────────────────────────
+async function fetchPeriod(p) {
+  const PROXY = window.location.origin + '/proxy?url=';
+  const apiRex = `${API_BASE}?buscaDato1=PENDIENTES&buscaDato2=${fmtD(p.desde)}&buscaDato3=${fmtD(p.hasta)}`;
+  const r = await fetch(PROXY + encodeURIComponent(apiRex));
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
 }
 
-function procesarDatos(data, period) {
-    if (!data || data.length === 0) {
-        document.getElementById('mainContent').innerHTML = '<div class="errbox">No hay datos para el período seleccionado.</div>';
-        return;
-    }
-    render(data, period);
-}
-
+// ── Destruir gráficos ────────────────────────────────────────────────
 function destroyCharts() {
-  if (chartBar) { chartBar.destroy(); chartBar = null; }
+  if (chartBar)    { chartBar.destroy();    chartBar    = null; }
   if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
+  if (chartEvoSec) { chartEvoSec.destroy(); chartEvoSec = null; }
+  if (chartEvoAna) { chartEvoAna.destroy(); chartEvoAna = null; }
+}
+
+// ── Resumen: carga y renderizado ─────────────────────────────────────
+function loadData() {
+  const p = getSelected();
+  document.getElementById('prange').textContent = `${fmtL(p.desde)} al ${fmtL(p.hasta)}`;
+  document.getElementById('mainContent').innerHTML =
+    '<div class="loader"><div class="spin"></div><span>Cargando datos&hellip;</span></div>';
+  destroyCharts();
+  fetchPeriod(p)
+    .then(data => render(data, p))
+    .catch(e => showError(e.message));
 }
 
 function render(data, period) {
+  if (!data || data.length === 0) {
+    document.getElementById('mainContent').innerHTML = '<div class="errbox">No hay datos para el período seleccionado.</div>';
+    return;
+  }
+
   const grA   = data.filter(r => r.Gr === 'A');
   const grAP  = data.filter(r => r.Gr === 'AP');
   const tA    = grA.find(r => r.Od == 90) || {};
@@ -225,28 +321,38 @@ function render(data, period) {
   document.getElementById('hdrMeta').innerHTML = `Actualizado: <strong>${nowStr()}</strong>`;
 
   let h = '';
+
+  // ── KPI Cards ───────────────────────────────────────────────────────
+  // Orden: Sin Dup (1ero, teal) | Total Pend | En Proceso | Vencidos | En Espera | Solucionados
   h += `<div class="sec">Resumen del Periodo <span class="sec-badge">Analistas Internos · Gr=A</span></div>`;
   h += `<div class="kgrid">`;
   const kc = (cls, ico, lbl, val, sub) =>
     `<div class="kcard ${cls}"><div class="kicon">${ico}</div><div class="klabel">${lbl}</div><div class="kval">${fmtN(val)}</div><div class="ksub">${sub}</div></div>`;
-  h += kc('c-v', 'PEND', 'Pendientes Total',   tA.CantTkPend,      'Tickets abiertos al cierre');
-  h += kc('c-b', 'PROC', 'En Proceso',          tA.CantTkEnProc,    'Siendo atendidos ahora');
-  h += kc('c-o', 'ESPE', 'En Espera',           tA.CantTkEspera,    'Aguardando respuesta');
-  h += kc('c-g', 'SOL',  'Solucionados',        tA.CantTkSol,       'Cerrados en el periodo');
-  h += kc('c-r', 'VENC', 'Vencidos (SLA)',      tA2.CantTkVenc || 0,'Incumplimiento de SLA');
-  h += kc('c-gr','SDUP', 'Pend. Sin Duplicados',tA2.CantTkPend,     'Tickets únicos abiertos');
+  h += kc('c-t',  'REAL', 'Pend. Sin Duplicados', tA2.CantTkPend,      'Tickets únicos — dato real del sector');
+  h += kc('c-v',  'PEND', 'Pendientes Total',      tA.CantTkPend,       'Tickets abiertos al cierre');
+  h += kc('c-b',  'PROC', 'En Proceso',            tA.CantTkEnProc,     'Siendo atendidos ahora');
+  h += kc('c-r',  'VENC', 'Vencidos (SLA)',         tA2.CantTkVenc || 0, 'Pendientes fuera de fecha/SLA');
+  h += kc('c-o',  'ESPE', 'En Espera',             tA.CantTkEspera,     'Aguardando respuesta cliente');
+  h += kc('c-g',  'SOL',  'Solucionados',           tA.CantTkSol,        'Cerrados en el periodo');
   h += `</div>`;
 
+  // ── Gráficos ─────────────────────────────────────────────────────────
   h += `<div class="twocol">`;
   h += `<div class="card"><div class="card-title"><span class="dot"></span>Ranking Pendientes por Analista</div>
-        <div style="position:relative;height:clamp(200px,36vw,320px)"><canvas id="cBar"></canvas></div></div>`;
-  h += `<div class="card"><div class="card-title"><span class="dot dot-o"></span>Distribución de Estados</div>
-        <div style="position:relative;height:clamp(200px,36vw,320px)"><canvas id="cStatus"></canvas></div></div>`;
+        <div style="position:relative;height:clamp(220px,36vw,340px)"><canvas id="cBar"></canvas></div></div>`;
+  h += `<div class="card"><div class="card-title"><span class="dot dot-o"></span>Distribución de Estados — Internos</div>
+        <div style="position:relative;height:clamp(220px,36vw,340px)"><canvas id="cStatus"></canvas></div></div>`;
   h += `</div>`;
 
+  // ── Tabla detalle analistas ───────────────────────────────────────────
   h += `<div class="sec">Detalle por Analista <span class="sec-badge">Internos</span></div>`;
   h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">`;
-  h += `<thead><tr><th>#</th><th>Analista</th><th class="r">Pendientes</th><th class="r">En Proceso</th><th class="r">En Espera</th><th class="r">Entregados</th><th class="r">Solucionados</th><th class="r">Vencidos</th><th style="min-width:90px">Carga</th></tr></thead><tbody>`;
+  h += `<thead><tr>
+    <th>#</th><th>Analista</th>
+    <th class="r">Pendientes</th><th class="r">En Proceso</th><th class="r">En Espera</th>
+    <th class="r">Entregados</th><th class="r">Solucionados</th><th class="r">Vencidos</th>
+    <th style="min-width:90px">Carga</th>
+  </tr></thead><tbody>`;
 
   anas.forEach((r, i) => {
     const pc = r.CantTkPend > 20 ? 'chip-r' : r.CantTkPend > 10 ? 'chip-o' : 'chip-gr';
@@ -264,49 +370,341 @@ function render(data, period) {
     </tr>`;
   });
 
+  // Fila TOTALES
   h += `<tr class="tr-tot">
     <td colspan="2">TOTALES</td>
-    <td class="r">${fmtN(tA.CantTkPend)}</td><td class="r">${fmtN(tA.CantTkEnProc)}</td>
-    <td class="r">${fmtN(tA.CantTkEspera)}</td><td class="r">${fmtN(tA.CantTkEntr)}</td>
-    <td class="r">${fmtN(tA.CantTkSol)}</td><td class="r">${fmtN(tA.CantTkVenc)}</td><td></td>
+    <td class="r">${fmtN(tA.CantTkPend)}</td>
+    <td class="r">${fmtN(tA.CantTkEnProc)}</td>
+    <td class="r">${fmtN(tA.CantTkEspera)}</td>
+    <td class="r">${fmtN(tA.CantTkEntr)}</td>
+    <td class="r">${fmtN(tA.CantTkSol)}</td>
+    <td class="r">${fmtN(tA.CantTkVenc)}</td>
+    <td></td>
+  </tr>`;
+  // Fila TOTALES SIN DUPLICADOS
+  h += `<tr class="tr-tot2">
+    <td colspan="2"><span class="chip chip-t">SIN DUPLICADOS</span></td>
+    <td class="r"><strong>${fmtN(tA2.CantTkPend)}</strong></td>
+    <td class="r">${fmtN(tA2.CantTkEnProc)}</td>
+    <td class="r">${fmtN(tA2.CantTkEspera)}</td>
+    <td class="r">${fmtN(tA2.CantTkEntr)}</td>
+    <td class="r">${fmtN(tA2.CantTkSol)}</td>
+    <td class="r"><span class="chip chip-r">${fmtN(tA2.CantTkVenc || 0)}</span></td>
+    <td></td>
   </tr>`;
   h += `</tbody></table></div></div>`;
 
-  document.getElementById('mainContent').innerHTML = h;
-  document.getElementById('foot').innerHTML = `Tablero APD &middot; REX &nbsp;|&nbsp; api.somosrex.com &nbsp;|&nbsp; ${nowStr()}`;
+  // ── Proveedores Externos ──────────────────────────────────────────────
+  h += `<div class="sec">Proveedores Externos <span class="sec-badge">Gr=AP</span></div>`;
+  h += `<div class="prov-grid">`;
+  provs.forEach(r => {
+    const hasAlert = (r.CantTkPend || 0) > 0;
+    h += `<div class="prov-card ${hasAlert ? 'alert' : 'ok'}">
+      <div class="prov-name">${r.AnalistaProv.trim()}</div>
+      <div class="prov-stats">
+        <div class="prov-stat"><span class="prov-stat-lbl">Pendientes</span>
+          <span class="prov-stat-val ${hasAlert ? 'chip chip-r' : ''}">${fmtN(r.CantTkPend)}</span></div>
+        <div class="prov-stat"><span class="prov-stat-lbl">En Proceso</span>
+          <span class="prov-stat-val">${fmtN(r.CantTkEnProc)}</span></div>
+        <div class="prov-stat"><span class="prov-stat-lbl">Solucionados</span>
+          <span class="prov-stat-val chip chip-g">${fmtN(r.CantTkSol)}</span></div>
+      </div>
+    </div>`;
+  });
+  // Tarjeta totales proveedores
+  h += `<div class="prov-card prov-total-card">
+    <div class="prov-name" style="color:var(--v)">&#931; Totales Proveedores</div>
+    <div class="prov-stats">
+      <div class="prov-stat"><span class="prov-stat-lbl">Pendientes</span>
+        <span class="prov-stat-val ${(tAP.CantTkPend||0) > 0 ? 'chip chip-r' : ''}">${fmtN(tAP.CantTkPend)}</span></div>
+      <div class="prov-stat"><span class="prov-stat-lbl">En Proceso</span>
+        <span class="prov-stat-val">${fmtN(tAP.CantTkEnProc)}</span></div>
+      <div class="prov-stat"><span class="prov-stat-lbl">Solucionados</span>
+        <span class="prov-stat-val chip chip-g">${fmtN(tAP.CantTkSol)}</span></div>
+    </div>
+  </div>`;
+  h += `</div>`;
 
-  // Gráficos
+  document.getElementById('mainContent').innerHTML = h;
+  document.getElementById('foot').innerHTML =
+    `Tablero APD &middot; REX &nbsp;|&nbsp; api.somosrex.com &nbsp;|&nbsp; ${nowStr()}`;
+
+  // ── Chart: Barras horizontales ────────────────────────────────────────
   const names = anas.map(r => r.AnalistaProv.trim().split(' ').slice(0,2).join(' '));
   const pends = anas.map(r => r.CantTkPend);
+  const totalPends = pends.reduce((a,b) => a+b, 0);
   const bClrs = pends.map((_, i) => `rgba(111,5,193,${1 - i / Math.max(pends.length - 1, 1) * 0.65})`);
 
   chartBar = new Chart(document.getElementById('cBar'), {
     type: 'bar',
-    data: { labels: names, datasets: [{ label:'Pendientes', data:pends, backgroundColor:bClrs, borderRadius:5 }] },
+    data: { labels: names, datasets: [{ label:'Pendientes', data:pends, backgroundColor:bClrs, borderRadius:5, borderSkipped:false }] },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display:false }, datalabels: { anchor:'end', align:'end', color:'#1D1D1B', font:{weight:'bold'} } },
-      scales: { x: { grid:{display:false}, max: Math.max(...pends) * 1.2 }, y: { grid:{display:false} } }
+      layout: { padding: { right: 95 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${c.raw} pendientes` } },
+        datalabels: {
+          anchor: 'end', align: 'end',
+          formatter: (value) => {
+            const pct = totalPends > 0 ? ((value / totalPends) * 100).toFixed(1) : 0;
+            return `${value}  (${pct}%)`;
+          },
+          color: '#1D1D1B',
+          font: { weight: '700', size: 10 }
+        }
+      },
+      scales: {
+        x: { grid:{color:'#E8E8E8'}, ticks:{color:'#5A5A6A',font:{size:10}}, max: Math.max(...pends) * 1.5 },
+        y: { grid:{display:false}, ticks:{color:'#1D1D1B',font:{size:11,weight:'600'}} }
+      }
     }
   });
 
+  // ── Chart: Donut estados ─────────────────────────────────────────────
   chartStatus = new Chart(document.getElementById('cStatus'), {
     type: 'doughnut',
     data: {
       labels: ['En Proceso','En Espera','Entregados','Solucionados','Vencidos'],
       datasets: [{
         data: [tA.CantTkEnProc, tA.CantTkEspera, tA.CantTkEntr, tA.CantTkSol, tA2.CantTkVenc || 0],
-        backgroundColor: ['#2957FF','#FF8C00','#9B3FDE','#1DB954','#E22626']
+        backgroundColor: ['#2957FF','#FF8C00','#9B3FDE','#1DB954','#E22626'],
+        borderWidth: 2, borderColor: '#fff'
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'right' } } }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font:{size:11}, padding:12 } },
+        datalabels: {
+          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+          formatter: (value, ctx) => {
+            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+            return `${value}\n${pct}%`;
+          },
+          color: '#fff',
+          font: { weight: '700', size: 11 },
+          textAlign: 'center'
+        }
+      }
+    }
   });
 }
 
-function showError(msg) {
-  document.getElementById('mainContent').innerHTML = `<div class="errbox"><strong>Error de conexión</strong><br>${msg}</div>`;
+// ── Evolución: control ────────────────────────────────────────────────
+function setEvoPeriod(p) {
+  evoPeriod = p;
+  destroyCharts();
+  loadEvolution();
+}
+function setEvoView(v) {
+  evoViewMode = v;
+  destroyCharts();
+  if (evoCache[evoPeriod]) {
+    renderEvolution(evoCache[evoPeriod]);
+  }
 }
 
+// ── Evolución: carga ─────────────────────────────────────────────────
+async function loadEvolution() {
+  document.getElementById('mainContent').innerHTML =
+    '<div class="loader"><div class="spin"></div><span>Cargando evolución&hellip;</span></div>';
+  document.getElementById('foot').innerHTML = '';
+
+  try {
+    const periods = evoPeriod === 'sem' ? getWeeks(4) : getMonths(4);
+
+    if (!evoCache[evoPeriod]) {
+      const results = await Promise.all(periods.map(p => fetchPeriod(p)));
+      evoCache[evoPeriod] = periods.map((p, i) => ({ period: p, data: results[i] }));
+    }
+
+    renderEvolution(evoCache[evoPeriod]);
+  } catch(e) {
+    showError(e.message);
+  }
+}
+
+// ── Evolución: renderizado ────────────────────────────────────────────
+function renderEvolution(items) {
+  // Orden cronológico (más antiguo primero en el gráfico)
+  const ordered = [...items].reverse();
+  const labels = ordered.map(it => it.period.labelShort);
+
+  // Extraer métricas de sector por período
+  const sinDup   = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==92)||{}); return t.CantTkPend||0; });
+  const totPend  = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==90)||{}); return t.CantTkPend||0; });
+  const enProc   = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==90)||{}); return t.CantTkEnProc||0; });
+  const solucion = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==90)||{}); return t.CantTkSol||0; });
+  const vencidos = ordered.map(it => { const g = it.data.filter(r=>r.Gr==='A'); const t=(g.find(r=>r.Od==92)||{}); return t.CantTkVenc||0; });
+
+  // Construir HTML con controles
+  let h = '';
+  h += `<div class="evo-controls">
+    <span class="evo-label">Período:</span>
+    <div class="ptabs">
+      <button class="ptab ${evoPeriod==='sem'?'active':''}" onclick="setEvoPeriod('sem')">Últimas 4 Semanas</button>
+      <button class="ptab ${evoPeriod==='mes'?'active':''}" onclick="setEvoPeriod('mes')">Últimos 4 Meses</button>
+    </div>
+    <div class="pbar-sep"></div>
+    <span class="evo-label">Vista:</span>
+    <div class="ptabs">
+      <button class="ptab ${evoViewMode==='sector'?'active':''}" onclick="setEvoView('sector')">Totales Sector</button>
+      <button class="ptab ${evoViewMode==='analistas'?'active':''}" onclick="setEvoView('analistas')">Por Analista</button>
+    </div>
+  </div>`;
+
+  if (evoViewMode === 'sector') {
+    // ── Vista Sector ──────────────────────────────────────────────────
+    h += `<div class="card">
+      <div class="card-title"><span class="dot dot-t"></span>Evolución de Pendientes — Sector (Gr=A)</div>
+      <div style="position:relative;height:300px"><canvas id="cEvoSec"></canvas></div>
+    </div>`;
+
+    // Tabla resumen
+    h += `<div class="sec">Detalle por Período</div>`;
+    h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">`;
+    h += `<thead><tr>
+      <th>Período</th>
+      <th class="r">Pend. Sin Dup</th><th class="r">Pend. Total</th>
+      <th class="r">En Proceso</th><th class="r">Solucionados</th><th class="r">Vencidos</th>
+    </tr></thead><tbody>`;
+    ordered.forEach((it, idx) => {
+      const sdp = sinDup[idx], tp = totPend[idx], ep = enProc[idx], sol = solucion[idx], vec = vencidos[idx];
+      h += `<tr>
+        <td style="font-weight:600">${it.period.label.replace(' (última cerrada)','')}</td>
+        <td class="r"><span class="chip chip-t">${fmtN(sdp)}</span></td>
+        <td class="r">${fmtN(tp)}</td>
+        <td class="r">${fmtN(ep)}</td>
+        <td class="r"><span class="chip chip-g">${fmtN(sol)}</span></td>
+        <td class="r">${vec > 0 ? `<span class="chip chip-r">${fmtN(vec)}</span>` : fmtN(vec)}</td>
+      </tr>`;
+    });
+    h += `</tbody></table></div></div>`;
+
+  } else {
+    // ── Vista Por Analista ────────────────────────────────────────────
+    // Unión de todos los analistas presentes en los 4 períodos
+    const allAnasSet = new Set();
+    ordered.forEach(it => {
+      it.data.filter(r => r.Gr === 'A' && r.Od != 90 && r.Od != 92)
+             .forEach(r => allAnasSet.add(r.AnalistaProv.trim()));
+    });
+    const allAnas = [...allAnasSet].sort();
+
+    h += `<div class="card">
+      <div class="card-title"><span class="dot"></span>Evolución de Pendientes por Analista</div>
+      <div style="position:relative;height:clamp(280px,42vw,420px)"><canvas id="cEvoAna"></canvas></div>
+    </div>`;
+
+    // Tabla cruzada
+    h += `<div class="sec">Pendientes por Analista y Período</div>`;
+    h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">`;
+    h += `<thead><tr><th>Analista</th>`;
+    ordered.forEach(it => { h += `<th class="r">${it.period.labelShort}</th>`; });
+    h += `<th class="r">Var.</th></tr></thead><tbody>`;
+    allAnas.forEach(name => {
+      const vals = ordered.map(it => {
+        const row = it.data.find(r => r.Gr === 'A' && r.Od != 90 && r.Od != 92 && r.AnalistaProv.trim() === name);
+        return row ? (row.CantTkPend || 0) : 0;
+      });
+      const first = vals[0], last = vals[vals.length-1];
+      const varVal = last - first;
+      const varChip = varVal > 0 ? `<span class="chip chip-r">+${varVal}</span>`
+                    : varVal < 0 ? `<span class="chip chip-g">${varVal}</span>`
+                    : `<span class="chip chip-gr">—</span>`;
+      h += `<tr><td style="font-weight:600;white-space:nowrap">${name}</td>`;
+      vals.forEach(v => { h += `<td class="r">${v > 0 ? fmtN(v) : '—'}</td>`; });
+      h += `<td class="r">${varChip}</td></tr>`;
+    });
+    h += `</tbody></table></div></div>`;
+  }
+
+  document.getElementById('mainContent').innerHTML = h;
+  document.getElementById('foot').innerHTML =
+    `Tablero APD &middot; REX &nbsp;|&nbsp; Evolución &nbsp;|&nbsp; ${nowStr()}`;
+
+  // ── Renderizar gráficos de evolución ──────────────────────────────
+  if (evoViewMode === 'sector') {
+    chartEvoSec = new Chart(document.getElementById('cEvoSec'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label:'Pend. Sin Dup',  data: sinDup,   borderColor:'#007A6E', backgroundColor:'rgba(0,166,147,.12)', fill:true,  tension:.35, borderWidth:3, pointRadius:6, pointBackgroundColor:'#007A6E' },
+          { label:'Pend. Total',    data: totPend,  borderColor:'#6F05C1', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, borderDash:[5,4], pointRadius:5, pointBackgroundColor:'#6F05C1' },
+          { label:'En Proceso',     data: enProc,   borderColor:'#2957FF', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#2957FF' },
+          { label:'Solucionados',   data: solucion, borderColor:'#1DB954', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#1DB954' },
+          { label:'Vencidos',       data: vencidos, borderColor:'#E22626', backgroundColor:'transparent',          fill:false, tension:.35, borderWidth:2, borderDash:[3,3], pointRadius:5, pointBackgroundColor:'#E22626' },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position:'bottom', labels:{font:{size:11},padding:16} },
+          datalabels: {
+            display: true,
+            anchor: 'end', align: 'top',
+            formatter: v => v > 0 ? v : '',
+            color: ctx => ctx.dataset.borderColor,
+            font: { weight:'700', size:10 }
+          }
+        },
+        scales: {
+          x: { grid:{color:'#E8E8E8'}, ticks:{font:{size:11}} },
+          y: { grid:{color:'#E8E8E8'}, ticks:{font:{size:10}}, beginAtZero:true }
+        }
+      }
+    });
+  } else {
+    // Construir datasets por analista
+    const allAnasSet = new Set();
+    ordered.forEach(it => {
+      it.data.filter(r => r.Gr === 'A' && r.Od != 90 && r.Od != 92)
+             .forEach(r => allAnasSet.add(r.AnalistaProv.trim()));
+    });
+    const allAnas = [...allAnasSet].sort();
+
+    const datasets = allAnas.map((name, i) => {
+      const color = ANA_COLORS[i % ANA_COLORS.length];
+      return {
+        label: name.split(' ').slice(0,2).join(' '),
+        data: ordered.map(it => {
+          const row = it.data.find(r => r.Gr==='A' && r.Od!=90 && r.Od!=92 && r.AnalistaProv.trim()===name);
+          return row ? (row.CantTkPend||0) : 0;
+        }),
+        borderColor: color,
+        backgroundColor: 'transparent',
+        tension: .35, borderWidth: 2, pointRadius: 5,
+        pointBackgroundColor: color
+      };
+    });
+
+    chartEvoAna = new Chart(document.getElementById('cEvoAna'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position:'bottom', labels:{font:{size:10},padding:10,boxWidth:12} },
+          datalabels: { display:false }
+        },
+        scales: {
+          x: { grid:{color:'#E8E8E8'}, ticks:{font:{size:11}} },
+          y: { grid:{color:'#E8E8E8'}, ticks:{font:{size:10}}, beginAtZero:true }
+        }
+      }
+    });
+  }
+}
+
+function showError(msg) {
+  document.getElementById('mainContent').innerHTML =
+    `<div class="errbox"><strong>Error de conexión</strong><br>${msg}</div>`;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────
 populateSelect();
 loadData();
 </script>

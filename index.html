@@ -111,7 +111,7 @@
 
 <script>
 Chart.register(ChartDataLabels);
-const API = 'https://api.somosrex.com/InfoExtra/KPI-APD';
+const API_BASE = 'https://api.somosrex.com/InfoExtra/KPI-APD';
 const fmtN = n => (n || 0).toLocaleString('es-AR');
 const pad  = n => String(n).padStart(2, '0');
 const fmtD = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
@@ -121,18 +121,16 @@ const nowStr = () => new Date().toLocaleString('es-AR', {day:'2-digit',month:'2-
 let mode = 'semana';
 let chartBar = null, chartStatus = null;
 
-// ── Generadores de periodos ────────────────────────────────────────
 function getWeeks(n = 12) {
   const weeks = [], today = new Date();
-  const dow = today.getDay();           // 0=Dom, 1=Lun … 6=Sab
-  const dls = (dow === 0) ? 7 : dow;   // dias hasta el ultimo domingo completo
+  const dow = today.getDay();
+  const dls = (dow === 0) ? 7 : dow;
   for (let i = 0; i < n; i++) {
     const sun = new Date(today); sun.setDate(today.getDate() - dls - i * 7);
-    const mon = new Date(sun);   mon.setDate(sun.getDate() - 6);
+    const mon = new Date(sun); mon.setDate(sun.getDate() - 6);
     weeks.push({
-      desde : mon,
-      hasta : sun,
-      label : `Sem ${fmtL(mon)} - ${fmtL(sun)}` + (i === 0 ? ' (ultima cerrada)' : '')
+      desde: mon, hasta: sun,
+      label: `Sem ${fmtL(mon)} - ${fmtL(sun)}` + (i === 0 ? ' (última cerrada)' : '')
     });
   }
   return weeks;
@@ -141,16 +139,15 @@ function getWeeks(n = 12) {
 function getMonths(n = 12) {
   const months = [], today = new Date();
   for (let i = 1; i <= n; i++) {
-    const d     = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
     const desde = new Date(d.getFullYear(), d.getMonth(), 1);
     const hasta = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    const lbl   = desde.toLocaleString('es-AR', {month:'long', year:'numeric'});
+    const lbl = desde.toLocaleString('es-AR', {month:'long', year:'numeric'});
     months.push({ desde, hasta, label: lbl.charAt(0).toUpperCase() + lbl.slice(1) });
   }
   return months;
 }
 
-// ── Selector ──────────────────────────────────────────────────────
 function setMode(m) {
   mode = m;
   document.getElementById('tabSem').classList.toggle('active', m === 'semana');
@@ -177,7 +174,6 @@ function getSelected() {
 
 function onPeriodChange() { loadData(); }
 
-// ── API fetch ─────────────────────────────────────────────────────
 function loadData() {
     const p = getSelected();
     document.getElementById('prange').textContent = `${fmtL(p.desde)} al ${fmtL(p.hasta)}`;
@@ -185,13 +181,8 @@ function loadData() {
         '<div class="loader"><div class="spin"></div><span>Cargando datos&hellip;</span></div>';
     destroyCharts();
 
-    // 1. Definimos el origen del proxy (funciona igual en local o en la web)
     const PROXY = window.location.origin + "/proxy?url=";
-    
-    // 2. Armamos la URL de la API de Rex
-    const apiRex = `${API}?buscaDato1=PENDIENTES&buscaDato2=${fmtD(p.desde)}&buscaDato3=${fmtD(p.hasta)}`;
-
-    // 3. Concatenamos ambas usando encodeURIComponent
+    const apiRex = `${API_BASE}?buscaDato1=PENDIENTES&buscaDato2=${fmtD(p.desde)}&buscaDato3=${fmtD(p.hasta)}`;
     const urlFinal = `${PROXY}${encodeURIComponent(apiRex)}`;
 
     fetch(urlFinal)
@@ -200,28 +191,30 @@ function loadData() {
             return r.json();
         })
         .then(data => {
-            console.log("Datos recibidos:", data);
-            // Aquí sigue tu lógica para procesar los datos y armar los gráficos
-            // (Asegurate de que la función que procesa los datos se llame aquí)
-            procesarDatos(data); 
+            procesarDatos(data, p);
         })
         .catch(e => {
             console.error(e);
-            document.getElementById('mainContent').innerHTML = 
-                `<div class="error">No se pudo obtener los datos<br><small>${e.message}</small></div>`;
+            showError(e.message);
         });
 }
 
+function procesarDatos(data, period) {
+    if (!data || data.length === 0) {
+        document.getElementById('mainContent').innerHTML = '<div class="errbox">No hay datos para el período seleccionado.</div>';
+        return;
+    }
+    render(data, period);
+}
+
 function destroyCharts() {
-  if (chartBar)    { chartBar.destroy();    chartBar    = null; }
+  if (chartBar) { chartBar.destroy(); chartBar = null; }
   if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
 }
 
-// ── Render ────────────────────────────────────────────────────────
 function render(data, period) {
   const grA   = data.filter(r => r.Gr === 'A');
   const grAP  = data.filter(r => r.Gr === 'AP');
-  // eslint-disable-next-line eqeqeq  (Od puede llegar como string o number)
   const tA    = grA.find(r => r.Od == 90) || {};
   const tA2   = grA.find(r => r.Od == 92) || {};
   const tAP   = grAP.find(r => r.Od == 90) || {};
@@ -232,8 +225,6 @@ function render(data, period) {
   document.getElementById('hdrMeta').innerHTML = `Actualizado: <strong>${nowStr()}</strong>`;
 
   let h = '';
-
-  // ── KPI ──
   h += `<div class="sec">Resumen del Periodo <span class="sec-badge">Analistas Internos · Gr=A</span></div>`;
   h += `<div class="kgrid">`;
   const kc = (cls, ico, lbl, val, sub) =>
@@ -243,26 +234,19 @@ function render(data, period) {
   h += kc('c-o', 'ESPE', 'En Espera',           tA.CantTkEspera,    'Aguardando respuesta');
   h += kc('c-g', 'SOL',  'Solucionados',        tA.CantTkSol,       'Cerrados en el periodo');
   h += kc('c-r', 'VENC', 'Vencidos (SLA)',      tA2.CantTkVenc || 0,'Incumplimiento de SLA');
-  h += kc('c-gr','SDUP', 'Pend. Sin Duplicados',tA2.CantTkPend,     'Tickets unicos abiertos');
+  h += kc('c-gr','SDUP', 'Pend. Sin Duplicados',tA2.CantTkPend,     'Tickets únicos abiertos');
   h += `</div>`;
 
-  // ── Charts ──
   h += `<div class="twocol">`;
   h += `<div class="card"><div class="card-title"><span class="dot"></span>Ranking Pendientes por Analista</div>
         <div style="position:relative;height:clamp(200px,36vw,320px)"><canvas id="cBar"></canvas></div></div>`;
-  h += `<div class="card"><div class="card-title"><span class="dot dot-o"></span>Distribucion de Estados &mdash; Totales Internos</div>
+  h += `<div class="card"><div class="card-title"><span class="dot dot-o"></span>Distribución de Estados</div>
         <div style="position:relative;height:clamp(200px,36vw,320px)"><canvas id="cStatus"></canvas></div></div>`;
   h += `</div>`;
 
-  // ── Tabla analistas ──
   h += `<div class="sec">Detalle por Analista <span class="sec-badge">Internos</span></div>`;
   h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">`;
-  h += `<thead><tr>
-    <th>#</th><th>Analista</th>
-    <th class="r">Pendientes</th><th class="r">En Proceso</th><th class="r">En Espera</th>
-    <th class="r">Entregados</th><th class="r">Solucionados</th><th class="r">Vencidos</th>
-    <th style="min-width:90px">Carga</th>
-  </tr></thead><tbody>`;
+  h += `<thead><tr><th>#</th><th>Analista</th><th class="r">Pendientes</th><th class="r">En Proceso</th><th class="r">En Espera</th><th class="r">Entregados</th><th class="r">Solucionados</th><th class="r">Vencidos</th><th style="min-width:90px">Carga</th></tr></thead><tbody>`;
 
   anas.forEach((r, i) => {
     const pc = r.CantTkPend > 20 ? 'chip-r' : r.CantTkPend > 10 ? 'chip-o' : 'chip-gr';
@@ -281,77 +265,28 @@ function render(data, period) {
   });
 
   h += `<tr class="tr-tot">
-    <td colspan="2" style="font-size:.75rem;letter-spacing:.06em">TOTALES</td>
+    <td colspan="2">TOTALES</td>
     <td class="r">${fmtN(tA.CantTkPend)}</td><td class="r">${fmtN(tA.CantTkEnProc)}</td>
     <td class="r">${fmtN(tA.CantTkEspera)}</td><td class="r">${fmtN(tA.CantTkEntr)}</td>
     <td class="r">${fmtN(tA.CantTkSol)}</td><td class="r">${fmtN(tA.CantTkVenc)}</td><td></td>
   </tr>`;
-  h += `<tr class="tr-tot2">
-    <td colspan="2" style="font-size:.75rem;letter-spacing:.06em;color:#0D9E44">SIN DUPLICADOS</td>
-    <td class="r">${fmtN(tA2.CantTkPend)}</td><td class="r">${fmtN(tA2.CantTkEnProc)}</td>
-    <td class="r">${fmtN(tA2.CantTkEspera)}</td><td class="r">${fmtN(tA2.CantTkEntr)}</td>
-    <td class="r">${fmtN(tA2.CantTkSol)}</td><td class="r">${fmtN(tA2.CantTkVenc || 0)}</td><td></td>
-  </tr>`;
   h += `</tbody></table></div></div>`;
 
-  // ── Proveedores ──
-  h += `<div class="sec">Proveedores Externos <span class="sec-badge">Gr=AP</span></div>`;
-  h += `<div class="prov-grid">`;
-  provs.forEach(r => {
-    h += `<div class="prov-card">
-      <div class="prov-name">${r.AnalistaProv.trim()}</div>
-      <div class="prov-stats">
-        <span class="prov-stat">Pend: <strong style="color:${r.CantTkPend > 0 ? 'var(--red)' : 'var(--green)'}">${fmtN(r.CantTkPend)}</strong></span>
-        <span class="prov-stat">En Proc: <strong>${fmtN(r.CantTkEnProc)}</strong></span>
-        <span class="prov-stat">Sol: <strong style="color:var(--green)">${fmtN(r.CantTkSol)}</strong></span>
-        ${r.CantTkVenc > 0 ? `<span class="prov-stat">Venc: <strong style="color:var(--red)">${fmtN(r.CantTkVenc)}</strong></span>` : ''}
-      </div>
-    </div>`;
-  });
-  h += `<div class="prov-card" style="border-color:var(--v);background:var(--surf2)">
-    <div class="prov-name" style="color:var(--v)">TOTAL PROVEEDORES</div>
-    <div class="prov-stats">
-      <span class="prov-stat">Pend: <strong style="color:var(--v)">${fmtN(tAP.CantTkPend)}</strong></span>
-      <span class="prov-stat">En Proc: <strong>${fmtN(tAP.CantTkEnProc)}</strong></span>
-      <span class="prov-stat">Sol: <strong style="color:var(--green)">${fmtN(tAP.CantTkSol)}</strong></span>
-    </div>
-  </div>`;
-  h += `</div>`;
-
   document.getElementById('mainContent').innerHTML = h;
-  document.getElementById('foot').innerHTML =
-    `Tablero APD &middot; REX &nbsp;|&nbsp; api.somosrex.com &nbsp;|&nbsp; ${nowStr()}`;
+  document.getElementById('foot').innerHTML = `Tablero APD &middot; REX &nbsp;|&nbsp; api.somosrex.com &nbsp;|&nbsp; ${nowStr()}`;
 
-  // ── Graficos ──
-  const names  = anas.map(r => r.AnalistaProv.trim().split(' ').slice(0,2).join(' '));
-  const pends  = anas.map(r => r.CantTkPend);
-  const bClrs  = pends.map((_, i) => `rgba(111,5,193,${1 - i / Math.max(pends.length - 1, 1) * 0.65})`);
+  // Gráficos
+  const names = anas.map(r => r.AnalistaProv.trim().split(' ').slice(0,2).join(' '));
+  const pends = anas.map(r => r.CantTkPend);
+  const bClrs = pends.map((_, i) => `rgba(111,5,193,${1 - i / Math.max(pends.length - 1, 1) * 0.65})`);
 
-  const totalPends = pends.reduce((a,b) => a+b, 0);
   chartBar = new Chart(document.getElementById('cBar'), {
     type: 'bar',
-    data: { labels: names, datasets: [{ label:'Pendientes', data:pends, backgroundColor:bClrs, borderRadius:5, borderSkipped:false }] },
+    data: { labels: names, datasets: [{ label:'Pendientes', data:pends, backgroundColor:bClrs, borderRadius:5 }] },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      layout: { padding: { right: 90 } },
-      plugins: {
-        legend: { display:false },
-        tooltip: { callbacks:{ label: c => ` ${c.raw} pendientes` }},
-        datalabels: {
-          anchor: 'end',
-          align: 'end',
-          formatter: (value) => {
-            const pct = totalPends > 0 ? ((value / totalPends) * 100).toFixed(1) : 0;
-            return `${value}  (${pct}%)`;
-          },
-          color: '#1D1D1B',
-          font: { weight: '700', size: 10 }
-        }
-      },
-      scales: {
-        x: { grid:{color:'#E8E8E8'}, ticks:{color:'#5A5A6A',font:{size:10}}, max: Math.max(...pends) * 1.45 },
-        y: { grid:{display:false}, ticks:{color:'#1D1D1B',font:{size:11,weight:'600'}} }
-      }
+      plugins: { legend: { display:false }, datalabels: { anchor:'end', align:'end', color:'#1D1D1B', font:{weight:'bold'} } },
+      scales: { x: { grid:{display:false}, max: Math.max(...pends) * 1.2 }, y: { grid:{display:false} } }
     }
   });
 
@@ -361,40 +296,17 @@ function render(data, period) {
       labels: ['En Proceso','En Espera','Entregados','Solucionados','Vencidos'],
       datasets: [{
         data: [tA.CantTkEnProc, tA.CantTkEspera, tA.CantTkEntr, tA.CantTkSol, tA2.CantTkVenc || 0],
-        backgroundColor: ['#2957FF','#FF8C00','#9B3FDE','#1DB954','#E22626'],
-        borderWidth: 2, borderColor: '#fff', hoverOffset: 8
+        backgroundColor: ['#2957FF','#FF8C00','#9B3FDE','#1DB954','#E22626']
       }]
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { position:'right', labels:{ font:{size:11}, color:'#1D1D1B', boxWidth:12, padding:10 }},
-        tooltip: { callbacks:{ label: c => ` ${c.label}: ${fmtN(c.raw)}` }},
-        datalabels: {
-          display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0,
-          formatter: (value, ctx) => {
-            const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
-            const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-            return `${value}\n${pct}%`;
-          },
-          color: '#fff',
-          font: { weight: '700', size: 11 },
-          textAlign: 'center'
-        }
-      },
-      cutout: '60%'
-    }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'right' } } }
   });
 }
 
 function showError(msg) {
-  document.getElementById('mainContent').innerHTML =
-    `<div class="errbox"><strong>No se pudo obtener los datos</strong><br>${msg}<br><br>
-     <small>Verificar: <code>${API}</code></small></div>`;
-  document.getElementById('hdrMeta').textContent = 'Error al cargar';
+  document.getElementById('mainContent').innerHTML = `<div class="errbox"><strong>Error de conexión</strong><br>${msg}</div>`;
 }
 
-// ── Init ──────────────────────────────────────────────────────────
 populateSelect();
 loadData();
 </script>

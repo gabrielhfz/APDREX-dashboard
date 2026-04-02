@@ -588,20 +588,17 @@ function renderEvolution(items) {
   </div>`;
 
   if (evoViewMode === 'sector') {
-    // ── SECTOR: gráfico → tabla → conclusiones ────────────────────
-    h += `<div class="card">
-      <div class="card-title"><span class="dot dot-t"></span>Evolución de Pendientes — Sector (Gr=A)</div>
-      <div style="position:relative;height:300px"><canvas id="cEvoSec"></canvas></div>
-    </div>`;
-
+    // ── SECTOR: tabla → gráfico → conclusiones ────────────────────
     h += `<div class="sec">Detalle por Período</div>`;
     h += `<div class="card" style="padding:20px 16px"><div class="tbl-wrap"><table class="tbl">
       <thead><tr>
         <th>Período</th>
         <th class="r">Pend. Sin Dup</th><th class="r">Pend. Total</th>
-        <th class="r">En Proceso</th><th class="r">Solucionados</th><th class="r">Vencidos</th>
+        <th class="r">En Proceso</th><th class="r">Vencidos</th><th class="r">Solucionados</th>
       </tr></thead><tbody>`;
-    ordered.forEach((it, idx) => {
+    // Períodos en orden descendente (más reciente primero)
+    [...Array(ordered.length).keys()].reverse().forEach(idx => {
+      const it = ordered[idx];
       const isLast = idx === lastIdx;
       const rowStyle = isLast ? ' style="background:linear-gradient(90deg,#e6f5f2,#d8f0ec)!important;font-weight:600"' : '';
       h += `<tr${rowStyle}>
@@ -609,11 +606,15 @@ function renderEvolution(items) {
         <td class="r"><span class="chip chip-t">${fmtN(sinDup[idx])}</span></td>
         <td class="r">${fmtN(totPend[idx])}</td>
         <td class="r">${fmtN(enProc[idx])}</td>
-        <td class="r"><span class="chip chip-g">${fmtN(solucion[idx])}</span></td>
         <td class="r">${vencidos[idx]>0?`<span class="chip chip-r">${fmtN(vencidos[idx])}</span>`:fmtN(vencidos[idx])}</td>
+        <td class="r"><span class="chip chip-g">${fmtN(solucion[idx])}</span></td>
       </tr>`;
     });
     h += `</tbody></table></div></div>`;
+    h += `<div class="card">
+      <div class="card-title"><span class="dot dot-t"></span>Evolución de Pendientes — Sector (Gr=A)</div>
+      <div style="position:relative;height:300px"><canvas id="cEvoSec"></canvas></div>
+    </div>`;
     h += buildSectorConclusions(sinDup, totPend, enProc, solucion, vencidos, ordered, periodWord, lastIdx);
 
   } else {

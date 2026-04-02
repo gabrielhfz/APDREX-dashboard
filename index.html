@@ -204,7 +204,7 @@ const nowStr = () => new Date().toLocaleString('es-AR', {day:'2-digit',month:'2-
 let mode = 'semana';
 let currentView = 'resumen';
 let chartBar = null, chartStatus = null;
-let chartEvoSec = null, chartEvoAna = null;
+let chartEvoSec = null, chartEvoAna = null, chartEvoBalance = null;
 
 // Cache para evolución
 let evoCache = { sem: null, mes: null };
@@ -298,8 +298,9 @@ async function fetchPeriod(p) {
 function destroyCharts() {
   if (chartBar)    { chartBar.destroy();    chartBar    = null; }
   if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
-  if (chartEvoSec) { chartEvoSec.destroy(); chartEvoSec = null; }
-  if (chartEvoAna) { chartEvoAna.destroy(); chartEvoAna = null; }
+  if (chartEvoSec)     { chartEvoSec.destroy();     chartEvoSec     = null; }
+  if (chartEvoAna)     { chartEvoAna.destroy();     chartEvoAna     = null; }
+  if (chartEvoBalance) { chartEvoBalance.destroy(); chartEvoBalance = null; }
 }
 
 // ── Resumen: carga y renderizado ─────────────────────────────────────
@@ -555,6 +556,7 @@ function renderEvolution(items) {
   const enProc   = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==90)||{}).CantTkEnProc||0; });
   const solucion = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==90)||{}).CantTkSol||0; });
   const vencidos = ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==92)||{}).CantTkVenc||0; });
+  const entrantes= ordered.map(it => { const g=it.data.filter(r=>r.Gr==='A'); return (g.find(r=>r.Od==90)||{}).CantTkEntr||0; });
 
   // ── Datos por analista: promedio + variación + orden por último período ─
   const allAnasSet = new Set();
@@ -594,7 +596,7 @@ function renderEvolution(items) {
       <thead><tr>
         <th>Período</th>
         <th class="r">Pend. Sin Dup</th><th class="r">Pend. Total</th>
-        <th class="r">En Proceso</th><th class="r">Vencidos</th><th class="r">Solucionados</th>
+        <th class="r">En Proceso</th><th class="r">Vencidos</th><th class="r">Entrantes</th><th class="r">Solucionados</th>
       </tr></thead><tbody>`;
     // Períodos en orden descendente (más reciente primero)
     [...Array(ordered.length).keys()].reverse().forEach(idx => {
@@ -607,6 +609,7 @@ function renderEvolution(items) {
         <td class="r">${fmtN(totPend[idx])}</td>
         <td class="r">${fmtN(enProc[idx])}</td>
         <td class="r">${vencidos[idx]>0?`<span class="chip chip-r">${fmtN(vencidos[idx])}</span>`:fmtN(vencidos[idx])}</td>
+        <td class="r">${fmtN(entrantes[idx])}</td>
         <td class="r"><span class="chip chip-g">${fmtN(solucion[idx])}</span></td>
       </tr>`;
     });
@@ -625,45 +628,61 @@ function renderEvolution(items) {
       <thead><tr>
         <th>#</th><th>Analista</th>`;
     ordered.forEach(it => { h += `<th class="r">${it.period.labelShort}</th>`; });
-    h += `<th class="r" style="color:#ffffff">Promedio</th><th class="r">Var.</th>
+    h += `<th class="r" style="color:#ffffff">Promedio</th>
       </tr></thead><tbody>`;
 
     anaData.forEach((a, i) => {
       const rbCls = i===0?'rb rb1':i===1?'rb rb2':i===2?'rb rb3':'rb rbn';
-      const varChip = a.varVal > 0
-        ? `<span class="chip chip-r">&#9650;+${a.varVal}</span>`
-        : a.varVal < 0
-          ? `<span class="chip chip-g">&#9660;${a.varVal}</span>`
-          : `<span class="chip chip-gr">—</span>`;
       h += `<tr>
         <td><span class="${rbCls}">${i+1}</span></td>
         <td style="font-weight:600;white-space:nowrap">${a.name}</td>`;
       a.vals.forEach((v, vi) => {
         const isLast = vi === lastIdx;
         const cell = v > 0 ? fmtN(v) : '—';
+        // Delta respecto al período anterior (inline, letra pequeña)
+        let deltaHtml = '';
+        if (vi > 0) {
+          const d = v - a.vals[vi - 1];
+          if (d > 0)      deltaHtml = `<span style="font-size:.72em;color:#E22626;font-weight:700;display:block;line-height:1.3">&#9650;+${d}</span>`;
+          else if (d < 0) deltaHtml = `<span style="font-size:.72em;color:#1DB954;font-weight:700;display:block;line-height:1.3">&#9660;${d}</span>`;
+          else            deltaHtml = `<span style="font-size:.72em;color:#999;display:block;line-height:1.3">—</span>`;
+        }
         h += isLast
-          ? `<td class="r"><strong>${cell}</strong></td>`
-          : `<td class="r" style="color:var(--txt2)">${cell}</td>`;
+          ? `<td class="r"><strong>${cell}</strong>${deltaHtml}</td>`
+          : `<td class="r" style="color:var(--txt2)">${cell}${deltaHtml}</td>`;
       });
-      h += `<td class="r"><span class="chip chip-t">${fmtN(a.avg)}</span></td>
-        <td class="r">${varChip}</td>
-      </tr>`;
+      h += `<td class="r"><span class="chip chip-t">${fmtN(a.avg)}</span></td></tr>`;
     });
 
     // Fila promedio sector por período
     h += `<tr class="tr-tot"><td colspan="2">Promedio del Sector</td>`;
-    ordered.forEach((it, idx) => {
-      const avg = anaData.length ? Math.round(anaData.reduce((s,a)=>s+a.vals[idx],0)/anaData.length*10)/10 : 0;
-      h += `<td class="r">${fmtN(avg)}</td>`;
+    const periodAvgs = ordered.map((it, idx) =>
+      anaData.length ? Math.round(anaData.reduce((s,a)=>s+a.vals[idx],0)/anaData.length*10)/10 : 0
+    );
+    periodAvgs.forEach((avg, idx) => {
+      let deltaHtml = '';
+      if (idx > 0) {
+        const d = Math.round((avg - periodAvgs[idx-1])*10)/10;
+        if (d > 0)      deltaHtml = `<span style="font-size:.72em;color:#E22626;font-weight:700;display:block;line-height:1.3">&#9650;+${d}</span>`;
+        else if (d < 0) deltaHtml = `<span style="font-size:.72em;color:#1DB954;font-weight:700;display:block;line-height:1.3">&#9660;${d}</span>`;
+        else            deltaHtml = `<span style="font-size:.72em;color:#999;display:block;line-height:1.3">—</span>`;
+      }
+      h += `<td class="r">${fmtN(avg)}${deltaHtml}</td>`;
     });
     const globalAvg = anaData.length ? Math.round(anaData.reduce((s,a)=>s+a.avg,0)/anaData.length*10)/10 : 0;
-    h += `<td class="r"><span class="chip chip-t">${fmtN(globalAvg)}</span></td><td></td></tr>`;
+    h += `<td class="r"><span class="chip chip-t">${fmtN(globalAvg)}</span></td></tr>`;
     h += `</tbody></table></div></div>`;
 
-    // Gráfico debajo de la tabla
+    // Gráfico pendientes por analista
     h += `<div class="card">
       <div class="card-title"><span class="dot"></span>Evolución de Pendientes por Analista</div>
       <div style="position:relative;height:clamp(280px,42vw,420px)"><canvas id="cEvoAna"></canvas></div>
+    </div>`;
+
+    // Gráfico de balance Entrantes vs Solucionados — Sector
+    h += `<div class="card">
+      <div class="card-title"><span class="dot dot-o"></span>Entrantes vs Solucionados — Sector</div>
+      <div style="position:relative;height:clamp(220px,32vw,300px)"><canvas id="cEvoBalance"></canvas></div>
     </div>`;
 
     h += buildAnalystConclusions(anaData, ordered, periodWord, lastIdx);
@@ -682,6 +701,7 @@ function renderEvolution(items) {
           { label:'Pend. Sin Dup', data:sinDup,   borderColor:'#007A6E', backgroundColor:'rgba(0,122,110,.10)', fill:true,  tension:.35, borderWidth:3, pointRadius:6, pointBackgroundColor:'#007A6E' },
           { label:'Pend. Total',   data:totPend,  borderColor:'#6F05C1', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, borderDash:[5,4], pointRadius:5, pointBackgroundColor:'#6F05C1' },
           { label:'En Proceso',    data:enProc,   borderColor:'#2957FF', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#2957FF' },
+          { label:'Entrantes',     data:entrantes,borderColor:'#FF8C00', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, borderDash:[4,3], pointRadius:5, pointBackgroundColor:'#FF8C00' },
           { label:'Solucionados',  data:solucion, borderColor:'#1DB954', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, pointRadius:5, pointBackgroundColor:'#1DB954' },
           { label:'Vencidos',      data:vencidos, borderColor:'#E22626', backgroundColor:'transparent', fill:false, tension:.35, borderWidth:2, borderDash:[3,3], pointRadius:5, pointBackgroundColor:'#E22626' },
         ]
@@ -716,6 +736,48 @@ function renderEvolution(items) {
         plugins: {
           legend: { position:'bottom', labels:{font:{size:10},padding:10,boxWidth:12} },
           datalabels: { display:false }
+        },
+        scales: {
+          x: { grid:{color:'#E8E8E8'}, ticks:{font:{size:11}} },
+          y: { grid:{color:'#E8E8E8'}, ticks:{font:{size:10}}, beginAtZero:true }
+        }
+      }
+    });
+
+    // Gráfico balance Entrantes vs Solucionados (barras agrupadas)
+    chartEvoBalance = new Chart(document.getElementById('cEvoBalance'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Entrantes',
+            data: entrantes,
+            backgroundColor: 'rgba(111,5,193,.75)',
+            borderColor: '#6F05C1',
+            borderWidth: 2,
+            borderRadius: 5
+          },
+          {
+            label: 'Solucionados',
+            data: solucion,
+            backgroundColor: 'rgba(29,185,84,.75)',
+            borderColor: '#1DB954',
+            borderWidth: 2,
+            borderRadius: 5
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position:'bottom', labels:{font:{size:11},padding:16,boxWidth:14} },
+          datalabels: {
+            display: true, anchor:'end', align:'top',
+            formatter: v => v > 0 ? v : '',
+            font: { weight:'700', size:11 },
+            color: ctx => ctx.dataset.borderColor
+          }
         },
         scales: {
           x: { grid:{color:'#E8E8E8'}, ticks:{font:{size:11}} },

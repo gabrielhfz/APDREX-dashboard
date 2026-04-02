@@ -185,13 +185,20 @@ function loadData() {
     '<div class="loader"><div class="spin"></div><span>Cargando datos&hellip;</span></div>';
   destroyCharts();
 
-  const url = `${API}?buscaDato1=PENDIENTES&buscaDato2=${fmtD(p.desde)}&buscaDato3=${fmtD(p.hasta)}`;
+// 1. Definimos el puente de Cloudflare que creaste
+        const PROXY = "https://apdrexdashboard.gabrielhfz.workers.dev/?url=";
+        
+        // 2. Armamos la URL original de la API de Rex
+        const apiOriginal = `${API}?buscaDato1=PENDIENTES&buscaDato2=${fmtD(p.desde)}&buscaDato3=${fmtD(p.hasta)}`;
+        
+        // 3. Concatenamos ambas usando encodeURIComponent para que no haya errores de símbolos
+        const urlFinal = `${PROXY}${encodeURIComponent(apiOriginal)}`;
 
-  fetch(url)
-    .then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
+        fetch(urlFinal)
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
     .then(data => {
       render(data, p);
     })

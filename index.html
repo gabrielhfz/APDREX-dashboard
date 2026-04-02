@@ -508,15 +508,19 @@ function setEvoView(v) {
 
 // ── Evolución: carga ─────────────────────────────────────────────────
 async function loadEvolution() {
-  document.getElementById('mainContent').innerHTML =
-    '<div class="loader"><div class="spin"></div><span>Cargando evolución&hellip;</span></div>';
   document.getElementById('foot').innerHTML = '';
 
   try {
     const periods = evoPeriod === 'sem' ? getWeeks(4) : getMonths(4);
 
     if (!evoCache[evoPeriod]) {
-      const results = await Promise.all(periods.map(p => fetchPeriod(p)));
+      const results = [];
+      for (let i = 0; i < periods.length; i++) {
+        document.getElementById('mainContent').innerHTML =
+          `<div class="loader"><div class="spin"></div><span>Cargando período ${i + 1} de ${periods.length}&hellip;</span></div>`;
+        const data = await fetchPeriod(periods[i]);
+        results.push(data);
+      }
       evoCache[evoPeriod] = periods.map((p, i) => ({ period: p, data: results[i] }));
     }
 
